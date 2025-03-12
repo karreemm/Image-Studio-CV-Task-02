@@ -1,1 +1,1 @@
-# karreemm-Image-Studio-CV-Task-02
+# Image-Studio-CV-Task-02
