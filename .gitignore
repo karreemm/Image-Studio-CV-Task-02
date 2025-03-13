@@ -176,3 +176,5 @@ cython_debug/
 cv_image_studio
 classes.txt
 tobedone.txt
+task2_edge_detection
+.gitignore

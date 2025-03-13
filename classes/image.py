@@ -23,6 +23,7 @@ class Image():
             self.output_image = self.input_image.copy() # a copy of the selected image is made so we can modify it without affecting the original image
             self.update_image_type(self.input_image) # update the selected image type
             self.input_image_fft , _ = self.fourier_transform(self.input_image)
+
     def update_image_type(self, image):
         '''
         function that detects whether image is grey or color (rgb) and updates the image_type attribute

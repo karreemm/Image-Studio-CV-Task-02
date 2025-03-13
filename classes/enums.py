@@ -9,6 +9,7 @@ class Channel(Enum):
     GREEN = 1
     BLUE = 2
 
-class DistributionCurve(Enum):
-    PDF = "PDF"
-    CDF = "CDF"
+class ContourMode(Enum):
+    FREE = "free"
+    RECTANGLE = "rectangle"
+    CIRCLE = "circle"
