@@ -9,5 +9,8 @@
     <file>..\icons_setup\icons\grey.png</file>
     <file>..\icons_setup\icons\hybrid.png</file>
     <file>..\icons_setup\icons\normalize.png</file>
+    <file>..\icons_setup\icons\circle.png</file>
+    <file>..\icons_setup\icons\square.png</file>
+
   </qresource>
 </RCC>
