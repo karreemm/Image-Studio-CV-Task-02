@@ -14,11 +14,17 @@ class Snake():
         
         self.contour_points = [(point.x(), point.y()) for point in qpoints]        
 
+    def convert_list_to_qpoints(self, points_list):
+        """
+        Convert a list of (x, y) tuples back to a list of QPoint objects.
+        """
+        return [QPoint(x, y) for x, y in points_list]
 
-    def external_energy(self, image, x, y):
+    def external_energy(self, gradients, x, y):
         """Compute external energy (gradient magnitude) at (x, y)."""
-        return -cv2.magnitude(image[y, x, 0], image[y, x, 1])  # Negative for attraction
-
+        gradient_x, gradient_y = gradients
+        return np.sum(-cv2.magnitude(gradient_x[y, x], gradient_y[y, x]))  # Negative for attraction
+    
     def internal_energy(self, contour, i, new_x, new_y):
         """Compute internal energy to maintain smoothness."""
         prev_point = contour[i - 1]
@@ -28,7 +34,7 @@ class Snake():
         curvature = np.linalg.norm([new_x - 2 * contour[i][0] + next_point[0], 
                                     new_y - 2 * contour[i][1] + next_point[1]])
         
-        return continuity + curvature
+        return np.sum(continuity + curvature)
 
     def greedy_snake(self, image, contour, alpha=0.1, beta=0.1, iterations=100):
         """Greedy algorithm to adjust contour points within a 5x5 window."""
@@ -50,7 +56,6 @@ class Snake():
                             E_ext = self.external_energy((gradient_x, gradient_y), new_x, new_y)
                             E_int = self.internal_energy(contour, i, new_x, new_y)
                             total_energy = alpha * E_int + beta * E_ext
-                            
                             if total_energy < min_energy:
                                 min_energy = total_energy
                                 best_x, best_y = new_x, new_y

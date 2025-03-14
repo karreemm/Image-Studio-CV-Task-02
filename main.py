@@ -58,13 +58,17 @@ class MainWindow(QMainWindow):
         self.t_high_input = self.findChild(QLineEdit, "cannyTHighInput")
         self.t_high_input.setText("100")
 
-        # Initialize Apply Button
+        # Initialize Apply Canny Button
         self.cannyApplyButton = self.findChild(QPushButton, "cannyApplyButton")
         self.cannyApplyButton.clicked.connect(self.apply_canny_edge_detection)
 
         # Initialize Reset Button
         self.reset_button = self.findChild(QPushButton, "reset")
         self.reset_button.clicked.connect(self.reset_image)
+        
+        # Initialize Apply Snake Button
+        self.apply_snake_greedy_button = self.findChild(QPushButton , "snakeApplyButton")
+        self.apply_snake_greedy_button.clicked.connect(self.apply_snake_greedy)
         
         # Initialize Controller
         self.controller = Controller(self.input_image , self.output_image ,
@@ -83,6 +87,9 @@ class MainWindow(QMainWindow):
         self.output_image_label.setPixmap(self.controller.numpy_to_qpixmap(self.input_image.input_image))
         self.output_image_label.setScaledContents(True)
 
+    def apply_snake_greedy(self):
+        self.controller.apply_snake_greedy()
+    
     def apply_canny_edge_detection(self):
         
         # Default values if fields are empty
