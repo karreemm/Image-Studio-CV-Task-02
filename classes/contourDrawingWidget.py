@@ -48,6 +48,7 @@ class ContourDrawingWidget(QLabel):
         if event.button() == Qt.LeftButton:
             self.drawing = False
             self.update()
+        print(self.contour_points)
 
     def paintEvent(self, event):
         """Redraws the image and overlays contours."""
