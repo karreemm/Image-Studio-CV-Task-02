@@ -3,6 +3,7 @@ import numpy as np
 from PyQt5.QtWidgets import QApplication, QMainWindow , QPushButton , QStackedWidget ,QFrame , QLabel , QVBoxLayout, QHBoxLayout , QCheckBox , QComboBox , QLineEdit
 from PyQt5.uic import loadUi
 from PyQt5.QtGui import QIcon
+import cv2
 from helper_functions.compile_qrc import compile_qrc
 from classes.image import Image
 from classes.controller import Controller
@@ -48,6 +49,22 @@ class MainWindow(QMainWindow):
         self.output_image_layout = QVBoxLayout(self.output_image_frame)
         self.output_image_layout.addWidget(self.output_image_label)
         self.output_image_frame.setLayout(self.output_image_layout)
+
+        # Initialize Canny Edge Detection Input Fields
+        self.sigma_input = self.findChild(QLineEdit, "cannySigmaInput")
+        self.sigma_input.setText("1")
+        self.t_low_input = self.findChild(QLineEdit, "cannyTLowInput")
+        self.t_low_input.setText("40")
+        self.t_high_input = self.findChild(QLineEdit, "cannyTHighInput")
+        self.t_high_input.setText("100")
+
+        # Initialize Apply Button
+        self.cannyApplyButton = self.findChild(QPushButton, "cannyApplyButton")
+        self.cannyApplyButton.clicked.connect(self.apply_canny_edge_detection)
+
+        # Initialize Reset Button
+        self.reset_button = self.findChild(QPushButton, "reset")
+        self.reset_button.clicked.connect(self.reset_image)
         
         # Initialize Controller
         self.controller = Controller(self.input_image , self.output_image ,
@@ -56,6 +73,55 @@ class MainWindow(QMainWindow):
     def browse_image(self):
         self.controller.browse_input_image()
         self.controller.update_contour_drawing_widget_params()
+
+    def reset_image(self):
+        self.sigma_input.setText("1")
+        self.t_low_input.setText("40")
+        self.t_high_input.setText("100")
+
+        # Update the output image display
+        self.output_image_label.setPixmap(self.controller.numpy_to_qpixmap(self.input_image.input_image))
+        self.output_image_label.setScaledContents(True)
+
+    def apply_canny_edge_detection(self):
+        
+        # Default values if fields are empty
+        sigma = 1.4
+        t_low = 40
+        t_high = 100
+        
+        # Try to convert inputs to appropriate values
+        try:
+            if self.sigma_input.text():
+                sigma = float(self.sigma_input.text())
+            if self.t_low_input.text():
+                t_low = float(self.t_low_input.text())
+            if self.t_high_input.text():
+                t_high = float(self.t_high_input.text())
+        except ValueError:
+            # If conversion fails, use default values
+            pass
+        
+        # Apply Canny edge detection
+        if self.input_image.input_image is not None:
+            from classes.canny import apply_canny_edge_detection
+            
+            # Apply the Canny edge detection
+            edges = apply_canny_edge_detection(self.input_image.input_image, sigma, t_low, t_high)
+            
+            # Convert the edges to 3-channel RGB for display
+            if len(edges.shape) == 2:  # If single channel
+                edges_rgb = cv2.cvtColor(edges, cv2.COLOR_GRAY2RGB)
+            else:
+                edges_rgb = edges
+            
+            # Update the output image
+            self.output_image.input_image = edges_rgb
+            self.output_image.output_image = edges_rgb
+            
+            # Update the output image display
+            self.output_image_label.setPixmap(self.controller.numpy_to_qpixmap(edges_rgb))
+            self.output_image_label.setScaledContents(True)
             
 if __name__ == '__main__':
     app = QApplication(sys.argv)

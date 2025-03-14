@@ -35,3 +35,25 @@ class Controller():
         bytes_per_line = channels * width
         qimage = QImage(image_array.data, width, height, bytes_per_line, QImage.Format_RGB888)
         return QPixmap.fromImage(qimage)
+    
+    def apply_canny_edge_detection(self, sigma, low_threshold, high_threshold):
+        from classes.canny import apply_canny_edge_detection
+        
+        if self.input_image.input_image is not None:
+            edges = apply_canny_edge_detection(self.input_image.input_image, sigma, low_threshold, high_threshold)
+            
+            # Convert to RGB if grayscale
+            if len(edges.shape) == 2:
+                edges_rgb = cv2.cvtColor(edges, cv2.COLOR_GRAY2RGB)
+            else:
+                edges_rgb = edges
+            
+            # Update the output image
+            self.output_image.input_image = edges_rgb
+            self.output_image.output_image = edges_rgb
+            
+            # Update the display
+            self.output_image_label.setPixmap(self.numpy_to_qpixmap(edges_rgb))
+            self.output_image_label.setScaledContents(True)
+        
+        return edges_rgb
