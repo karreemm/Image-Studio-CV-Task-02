@@ -3,7 +3,7 @@ from PyQt5.QtGui import QPixmap , QImage
 from classes.enums import ContourMode
 from classes.snake import Snake
 from copy import deepcopy
-
+from classes.canny import convert_rgb_to_gray
 
 class Controller():
     def __init__(self , input_image , output_image ,contour_drawing_widget , output_image_label):
@@ -21,7 +21,7 @@ class Controller():
     
     def update_contour_drawing_widget_params(self):
         self.contour_drawing_widget.pixmap = self.numpy_to_qpixmap(self.input_image.input_image)
-        self.contour_drawing_widget.current_mode = ContourMode.RECTANGLE
+        self.contour_drawing_widget.current_mode = ContourMode.FREE
         self.contour_drawing_widget.start_point = None
         self.contour_drawing_widget.end_point = None
         self.contour_drawing_widget.contour_points = []  
@@ -63,7 +63,8 @@ class Controller():
     def apply_snake_greedy(self):
         initial_contour_points = self.contour_drawing_widget.contour_points
         self.snake.convert_qpoints_to_list(initial_contour_points)
-        new_contour_list = self.snake.greedy_snake(self.input_image.input_image , self.snake.contour_points)
+        grey_image = convert_rgb_to_gray(self.input_image.input_image)
+        new_contour_list = self.snake.active_contour_greedy( grey_image, self.snake.contour_points)
         new_contour_qpoints = self.snake.convert_list_to_qpoints(new_contour_list)
         self.contour_drawing_widget.contour_points = new_contour_qpoints
         self.contour_drawing_widget.update()

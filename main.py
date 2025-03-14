@@ -129,7 +129,7 @@ class MainWindow(QMainWindow):
             # Update the output image display
             self.output_image_label.setPixmap(self.controller.numpy_to_qpixmap(edges_rgb))
             self.output_image_label.setScaledContents(True)
-           
+
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     window = MainWindow()
