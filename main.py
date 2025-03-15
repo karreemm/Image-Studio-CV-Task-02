@@ -1,6 +1,6 @@
 import sys
 import numpy as np
-from PyQt5.QtWidgets import QApplication, QMainWindow , QPushButton , QStackedWidget ,QFrame , QLabel , QVBoxLayout, QHBoxLayout , QCheckBox , QComboBox , QLineEdit
+from PyQt5.QtWidgets import QApplication, QMainWindow , QPushButton , QStackedWidget ,QFrame , QLabel , QVBoxLayout, QHBoxLayout , QCheckBox , QComboBox , QLineEdit, QSlider
 from PyQt5.uic import loadUi
 from PyQt5.QtGui import QIcon
 import cv2
@@ -53,14 +53,54 @@ class MainWindow(QMainWindow):
         # Initialize Canny Edge Detection Input Fields
         self.sigma_input = self.findChild(QLineEdit, "cannySigmaInput")
         self.sigma_input.setText("1")
+        self.sigma_input.textChanged.connect(self.update_sigma)
         self.t_low_input = self.findChild(QLineEdit, "cannyTLowInput")
         self.t_low_input.setText("40")
+        self.t_low_input.textChanged.connect(self.update_t_low)
         self.t_high_input = self.findChild(QLineEdit, "cannyTHighInput")
         self.t_high_input.setText("100")
+        self.t_high_input.textChanged.connect(self.update_t_high)
 
         # Initialize Apply Canny Button
         self.cannyApplyButton = self.findChild(QPushButton, "cannyApplyButton")
         self.cannyApplyButton.clicked.connect(self.apply_canny_edge_detection)
+
+        # Initialize % of max votes of shapes in accumulator
+        self.cannyMaxVoteLinesValue = 50
+        self.cannyMaxVoteCirclesValue = 50
+        self.cannyMaxVoteEllipsesValue = 50
+
+        self.cannyMaxVoteEllipses = self.findChild(QLabel, "cannyMaxVoteEllipses")
+        self.cannyMaxVoteCircles = self.findChild(QLabel, "cannyMaxVoteCircles")
+        self.cannyMaxVoteLines = self.findChild(QLabel, "cannyMaxVoteLines")
+
+        self.cannyMaxVoteEllipsesSlider = self.findChild(QSlider, "cannyMaxVoteEllipsesSlider")
+        self.cannyMaxVoteCirclesSlider = self.findChild(QSlider, "cannyMaxVoteCirclesSlider")
+        self.cannyMaxVoteLinesSlider = self.findChild(QSlider, "cannyMaxVoteLinesSlider")
+
+        for slider in [self.cannyMaxVoteEllipsesSlider, self.cannyMaxVoteCirclesSlider, self.cannyMaxVoteLinesSlider]:
+            slider.setMinimum(0)
+            slider.setMaximum(100)
+            slider.setValue(50)
+
+        self.cannyMaxVoteEllipsesSlider.valueChanged.connect(self.update_canny_max_vote_ellipses)
+        self.cannyMaxVoteCirclesSlider.valueChanged.connect(self.update_canny_max_vote_circles)
+        self.cannyMaxVoteLinesSlider.valueChanged.connect(self.update_canny_max_vote_lines)
+        
+
+        # Initialize Shape Detection Checkboxes
+        self.isCannyLinesDetected = False
+        self.isCannyCirclesDetected = False
+        self.isCannyEllipsesDetected = False
+
+        self.detectEllipsesCheckbox = self.findChild(QCheckBox, "detectEllipsesCheckbox")
+        self.detectCirclesCheckbox = self.findChild(QCheckBox, "detectCirclesCheckbox")
+        self.detectLinesCheckbox = self.findChild(QCheckBox, "detectLinesCheckbox")
+
+        self.detectEllipsesCheckbox.stateChanged.connect(self.detect_ellipses)
+        self.detectCirclesCheckbox.stateChanged.connect(self.detect_circles)
+        self.detectLinesCheckbox.stateChanged.connect(self.detect_lines)
+
 
         # Initialize Reset Button
         self.reset_button = self.findChild(QPushButton, "reset")
@@ -90,46 +130,110 @@ class MainWindow(QMainWindow):
     def apply_snake_greedy(self):
         self.controller.apply_snake_greedy()
     
+    # def apply_canny_edge_detection(self):
+        
+    #     # Default values if fields are empty
+    #     sigma = 1.4
+    #     t_low = 40
+    #     t_high = 100
+        
+    #     # Try to convert inputs to appropriate values
+    #     try:
+    #         if self.sigma_input.text():
+    #             sigma = float(self.sigma_input.text())
+    #         if self.t_low_input.text():
+    #             t_low = float(self.t_low_input.text())
+    #         if self.t_high_input.text():
+    #             t_high = float(self.t_high_input.text())
+    #     except ValueError:
+    #         # If conversion fails, use default values
+    #         pass
+        
+    #     # Apply Canny edge detection
+    #     if self.input_image.input_image is not None:
+    #         from classes.canny import apply_canny_edge_detection
+            
+    #         # Apply the Canny edge detection
+    #         edges = apply_canny_edge_detection(self.input_image.input_image, sigma, t_low, t_high)
+            
+    #         # Convert the edges to 3-channel RGB for display
+    #         if len(edges.shape) == 2:  # If single channel
+    #             edges_rgb = cv2.cvtColor(edges, cv2.COLOR_GRAY2RGB)
+    #         else:
+    #             edges_rgb = edges
+            
+    #         # Update the output image
+    #         self.output_image.input_image = edges_rgb
+    #         self.output_image.output_image = edges_rgb
+            
+    #         # Update the output image display
+    #         self.output_image_label.setPixmap(self.controller.numpy_to_qpixmap(edges_rgb))
+    #         self.output_image_label.setScaledContents(True)
+
     def apply_canny_edge_detection(self):
         
-        # Default values if fields are empty
-        sigma = 1.4
-        t_low = 40
-        t_high = 100
+        sigma = float(self.sigma_input.text())
+        low_threshold = float(self.t_low_input.text())
+        high_threshold = float(self.t_high_input.text())
+
+        detect_lines = self.isCannyLinesDetected
+        detect_circles = self.isCannyCirclesDetected
+        detect_ellipses = self.isCannyEllipsesDetected
+
+        line_vote_threshold = self.cannyMaxVoteLinesValue
+        circle_vote_threshold = self.cannyMaxVoteCirclesValue
+        ellipse_vote_threshold = self.cannyMaxVoteEllipsesValue
+
+        result_image = self.controller.apply_canny_edge_detection(sigma, low_threshold, high_threshold,
+                              detect_lines, detect_circles, detect_ellipses,
+                              line_vote_threshold, circle_vote_threshold, ellipse_vote_threshold)
         
-        # Try to convert inputs to appropriate values
+        self.output_image_label.setPixmap(self.controller.numpy_to_qpixmap(result_image))
+        self.output_image_label.setScaledContents(True)
+
+    def update_sigma(self):
+            try:
+                self.sigma_value = float(self.sigma_input.text())
+            except ValueError:
+                self.sigma_value = 1.0
+                self.sigma_input.setText("1")
+    
+    def update_t_low(self):
         try:
-            if self.sigma_input.text():
-                sigma = float(self.sigma_input.text())
-            if self.t_low_input.text():
-                t_low = float(self.t_low_input.text())
-            if self.t_high_input.text():
-                t_high = float(self.t_high_input.text())
+            self.t_low_value = float(self.t_low_input.text())
         except ValueError:
-            # If conversion fails, use default values
-            pass
-        
-        # Apply Canny edge detection
-        if self.input_image.input_image is not None:
-            from classes.canny import apply_canny_edge_detection
-            
-            # Apply the Canny edge detection
-            edges = apply_canny_edge_detection(self.input_image.input_image, sigma, t_low, t_high)
-            
-            # Convert the edges to 3-channel RGB for display
-            if len(edges.shape) == 2:  # If single channel
-                edges_rgb = cv2.cvtColor(edges, cv2.COLOR_GRAY2RGB)
-            else:
-                edges_rgb = edges
-            
-            # Update the output image
-            self.output_image.input_image = edges_rgb
-            self.output_image.output_image = edges_rgb
-            
-            # Update the output image display
-            self.output_image_label.setPixmap(self.controller.numpy_to_qpixmap(edges_rgb))
-            self.output_image_label.setScaledContents(True)
-           
+            self.t_low_value = 40
+            self.t_low_input.setText("40")
+
+    def update_t_high(self):
+        try:
+            self.t_high_value = float(self.t_high_input.text())
+        except ValueError:
+            self.t_high_value = 100
+            self.t_high_input.setText("100")
+
+    def update_canny_max_vote_ellipses(self):
+        self.cannyMaxVoteEllipses.setText(str(self.cannyMaxVoteEllipsesSlider.value()))
+        self.cannyMaxVoteEllipsesValue = self.cannyMaxVoteEllipsesSlider.value()
+
+    def update_canny_max_vote_circles(self):
+        self.cannyMaxVoteCircles.setText(str(self.cannyMaxVoteCirclesSlider.value()))
+        self.cannyMaxVoteCirclesValue = self.cannyMaxVoteCirclesSlider.value()
+
+    def update_canny_max_vote_lines(self):
+        self.cannyMaxVoteLines.setText(str(self.cannyMaxVoteLinesSlider.value()))
+        self.cannyMaxVoteLinesValue = self.cannyMaxVoteLinesSlider.value()
+
+    def detect_ellipses(self):
+        self.isCannyEllipsesDetected = not self.isCannyEllipsesDetected
+
+    def detect_circles(self):
+        self.isCannyCirclesDetected = not self.isCannyCirclesDetected
+
+    def detect_lines(self):
+        self.isCannyLinesDetected = not self.isCannyLinesDetected
+
+
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     window = MainWindow()
