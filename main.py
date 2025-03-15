@@ -9,7 +9,7 @@ from classes.image import Image
 from classes.controller import Controller
 from classes.enums import ImageSource , Channel
 from classes.contourDrawingWidget import ContourDrawingWidget
-
+from classes.snake import Snake
 compile_qrc()
 from icons_setup.icons import *
 
@@ -26,7 +26,8 @@ class MainWindow(QMainWindow):
 
         # Initialize Contour Drawing Widget
         self.contour_drawing_widget = ContourDrawingWidget(self.input_image_frame)
-        
+
+                
         # Initialize Input Image Layout
         self.input_image_layout = QVBoxLayout(self.input_image_frame)
         
@@ -110,6 +111,9 @@ class MainWindow(QMainWindow):
         self.apply_snake_greedy_button = self.findChild(QPushButton , "snakeApplyButton")
         self.apply_snake_greedy_button.clicked.connect(self.apply_snake_greedy)
         
+        self.contour_perimeter = self.findChild(QLabel , "snakePerimeter")
+        self.contour_area = self.findChild(QLabel , "snakeArea")
+        self.chain_code = self.findChild(QLabel , "snakeCodeChain")
         # Initialize Controller
         self.controller = Controller(self.input_image , self.output_image ,
                                     self.contour_drawing_widget , self.output_image_label)
@@ -129,7 +133,19 @@ class MainWindow(QMainWindow):
 
     def apply_snake_greedy(self):
         self.controller.apply_snake_greedy()
+        self.update_contour_perimeter()
+        self.update_contour_area()  
+        self.update_chain_code()
+        
+    def update_contour_area(self):
+        self.contour_area.setText(str(self.controller.snake.contour_area))
     
+    def update_contour_perimeter(self):
+        self.contour_perimeter.setText(str(self.controller.snake.contour_perimiter))
+        
+    def update_chain_code(self):
+        self.chain_code.setText(str(self.controller.snake.chain_code))
+        
     # def apply_canny_edge_detection(self):
         
     #     # Default values if fields are empty

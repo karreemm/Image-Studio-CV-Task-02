@@ -1643,7 +1643,7 @@ font-weight: bold;</string>
                  <string notr="true">font-size: 20px;</string>
                 </property>
                 <property name="text">
-                 <string>123456 123456 123456 123456</string>
+                 <string></string>
                 </property>
                 <property name="wordWrap">
                  <bool>true</bool>
@@ -1713,13 +1713,13 @@ font-weight: bold;</string>
                  <widget class="QLabel" name="snakeArea">
                   <property name="minimumSize">
                    <size>
-                    <width>40</width>
+                    <width>100</width>
                     <height>0</height>
                    </size>
                   </property>
                   <property name="maximumSize">
                    <size>
-                    <width>40</width>
+                    <width>100</width>
                     <height>16777215</height>
                    </size>
                   </property>
@@ -1728,7 +1728,7 @@ font-weight: bold;</string>
 </string>
                   </property>
                   <property name="text">
-                   <string>25</string>
+                   <string></string>
                   </property>
                   <property name="alignment">
                    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -1796,13 +1796,13 @@ font-weight: bold;</string>
                  <widget class="QLabel" name="snakePerimeter">
                   <property name="minimumSize">
                    <size>
-                    <width>40</width>
+                    <width>100</width>
                     <height>0</height>
                    </size>
                   </property>
                   <property name="maximumSize">
                    <size>
-                    <width>40</width>
+                    <width>100</width>
                     <height>16777215</height>
                    </size>
                   </property>
@@ -1811,7 +1811,7 @@ font-weight: bold;</string>
 </string>
                   </property>
                   <property name="text">
-                   <string>30</string>
+                   <string></string>
                   </property>
                   <property name="alignment">
                    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>

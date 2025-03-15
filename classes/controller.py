@@ -117,3 +117,4 @@ class Controller():
         new_contour_qpoints = self.snake.convert_list_to_qpoints(new_contour_list)
         self.contour_drawing_widget.contour_points = new_contour_qpoints
         self.contour_drawing_widget.update()
+        

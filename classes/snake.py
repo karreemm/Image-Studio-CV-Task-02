@@ -8,8 +8,10 @@ from classes.enums import ContourMode
 class Snake():
     def __init__(self):
         self.contour_points = []  # Free-draw contour points
-    
-    
+        self.contour_perimiter = 0
+        self.contour_area = 0
+        self.chain_code = []
+        
     def convert_qpoints_to_list(self, qpoints):
         
         self.contour_points = [(point.x(), point.y()) for point in qpoints]        
@@ -20,142 +22,109 @@ class Snake():
         """
         return [QPoint(x, y) for x, y in points_list]
 
-    def external_energy(self, gradients, x, y):
-        """Compute external energy (gradient magnitude) at (x, y)."""
-        gradient_x, gradient_y = gradients
-        result = np.square(np.abs(gradient_x[y, x])) + np.square(np.abs( gradient_y[y, x])) # Negative for attraction
-        return -1 * result
-        
-    def internal_energy(self, contour, i, new_x, new_y):
-        """Compute internal energy to maintain elasticity."""
-        prev_point = contour[i - 1]
-        next_point = contour[(i + 1) % len(contour)]  # Ensuring cyclic boundary condition
-
-        elasticity = np.square(np.linalg.norm([next_point[0] - contour[i][0],next_point[1] - contour[i][1]]))
-
-        curvature = np.square(np.linalg.norm([next_point[0] - 2 * contour[i][0] + prev_point[0], 
-                                            next_point[1] - 2 * contour[i][1] + prev_point[1]]))
-        
-        return (elasticity , curvature)
-
     
-    def active_contour_greedy(self , image, contour_points, alpha=4, beta=1, gamma=1, max_iterations=100, 
-                          search_window_size=5):
+    def compute_image_gradient(self, image):
         """
-        Implement the active contour (snake) algorithm using a greedy approach.
-        
-        Parameters:
-        -----------
-        image : numpy.ndarray
-            The input image as a 2D numpy array (grayscale).
-        contour_points : list of tuples
-            Initial contour points as a list of (x, y) tuples.
-        alpha : float
-            Weight for the continuity energy term.
-        beta : float
-            Weight for the curvature energy term.
-        gamma : float
-            Weight for the image (edge) energy term.
-        max_iterations : int
-            Maximum number of iterations for the snake evolution.
-        search_window_size : int
-            Size of the neighborhood to search for optimal points.
-        
-        Returns:
-        --------
-        numpy.ndarray
-            Final snake contour points as a numpy array of shape (n, 2).
+        Compute the image gradient and normalize the gradient magnitude.
         """
-        # Convert contour points to numpy array
-        snake = np.array(contour_points)
-        
-        # Get image dimensions
-        height, width = image.shape[:2]
-        
-        # Precompute image gradient for edge energy
         gradient_x = np.zeros(image.shape, dtype=np.float64)
         gradient_y = np.zeros(image.shape, dtype=np.float64)
-        
-        # Simple x and y gradients using finite differences
         gradient_x[:, 1:-1] = image[:, 2:] - image[:, :-2]
         gradient_y[1:-1, :] = image[2:, :] - image[:-2, :]
-        
-        # Compute gradient magnitude
         gradient_magnitude = np.sqrt(gradient_x**2 + gradient_y**2)
-        
-        # Normalize gradient magnitude to [0, 1]
         if gradient_magnitude.max() > 0:
             gradient_magnitude = gradient_magnitude / gradient_magnitude.max()
         
         # Invert the gradient magnitude to use as image energy
-        image_energy = 1.0 - gradient_magnitude
+        return (1.0 - gradient_magnitude)
+    
+    def compute_internal_energy(self, previous_point, new_x, new_y, next_point, alpha, beta):
+        """
+        Compute the internal energy (continuity and curvature).
+        """
+        continuity_energy = np.sqrt((new_x - previous_point[0])**2 + (new_y - previous_point[1])**2)
+        curvature_energy = ((previous_point[0] - 2 * new_x + next_point[0])**2 +
+                            (previous_point[1] - 2 * new_y + next_point[1])**2)
+        return alpha * continuity_energy + beta * curvature_energy
+
+    def compute_external_energy(self, image_energy, new_x, new_y, gamma):
+        """
+        Compute the external energy based on the image gradient.
+        """
+        return gamma * image_energy[new_y, new_x]
+
+    
+    def active_contour_greedy(self, image, contour_points, alpha=4, beta=1, gamma=1, max_iterations=100, 
+                            search_window_size=5):
+        """
+        Implement the active contour (snake) algorithm using a greedy approach.
+        """
+        snake = np.array(contour_points)
+        height, width = image.shape[:2]
+        image_energy = self.compute_image_gradient(image)
         
-        # Main loop for snake evolution
         for iteration in range(max_iterations):
             new_snake = np.copy(snake)
             snake_energy = np.zeros(len(snake))
             
-            # Loop through all points in the snake
             for i in range(len(snake)):
-                # Get coordinates of the current point
                 x, y = snake[i]
+                previous_index, next_index = (i - 1) % len(snake), (i + 1) % len(snake)
+                previous_point, next_point = snake[previous_index], snake[next_index]
                 
-                # Get indices of previous and next points (circular)
-                prev_idx = (i - 1) % len(snake)
-                next_idx = (i + 1) % len(snake)
+                min_energy, optimal_point = float('inf'), (x, y)
                 
-                # Previous and next points
-                prev_point = snake[prev_idx]
-                next_point = snake[next_idx]
-                
-                min_energy = float('inf')
-                best_point = (x, y)
-                
-                # Search in the neighborhood
                 for dx in range(-search_window_size, search_window_size + 1):
                     for dy in range(-search_window_size, search_window_size + 1):
-                        new_x = int(x + dx)
-                        new_y = int(y + dy)
+                        new_x, new_y = int(x + dx), int(y + dy)
                         
-                        # Check if the new point is within image boundaries
                         if 0 <= new_x < width and 0 <= new_y < height:
-                            # Calculate all energy terms
+                            internal_energy = self.compute_internal_energy(previous_point, new_x, new_y, next_point, alpha, beta)
+                            external_energy = self.compute_external_energy(image_energy, new_x, new_y, gamma)
+                            total_energy = internal_energy + external_energy
                             
-                            # Continuity energy: distance to previous point
-                            dist_prev = np.sqrt((new_x - prev_point[0])**2 + (new_y - prev_point[1])**2)
-                            continuity_energy = dist_prev
-                            
-                            # Curvature energy: second derivative approximation
-                            curvature_energy = ((prev_point[0] - 2*new_x + next_point[0])**2 + 
-                                            (prev_point[1] - 2*new_y + next_point[1])**2)
-                            
-                            # Image energy: based on gradient magnitude
-                            image_term = image_energy[new_y, new_x]
-                            
-                            # Total energy: weighted sum of the three energy terms
-                            total_energy = (alpha * continuity_energy + 
-                                        beta * curvature_energy + 
-                                        gamma * image_term)
-                            
-                            # Update best point if we found a lower energy
                             if total_energy < min_energy:
-                                min_energy = total_energy
-                                best_point = (new_x, new_y)
+                                min_energy, optimal_point = total_energy, (new_x, new_y)
                                 snake_energy[i] = min_energy
                 
-                # Update snake point with the best one found
-                new_snake[i] = best_point
+                new_snake[i] = optimal_point
             
-            # Update the snake
             snake = new_snake
             
-            # Check for convergence (when average energy change is small)
             if iteration > 0 and np.mean(snake_energy) < 0.01:
-                print(f"Converged after {iteration+1} iterations")
+                print(f"Converged after {iteration + 1} iterations")
                 break
         
+        self.contour_perimiter = round(self.calculate_contour_perimiter(snake))
+        self.contour_area = round(self.calculate_contour_area(snake))
+        print(f'contour_perimiter : {self.contour_perimiter}')
+        print(f'contour_area : {self.contour_area}')
+        
         return snake
+
+    def calculate_contour_perimiter(self, contour):
+        """Calculate the perimiter of the contour."""
+        contour_perimiter = 0
+        for i in range(len(contour)):
+            contour_perimiter += np.linalg.norm(contour[i] - contour[(i + 1) % len(contour)])
+        return contour_perimiter
     
+    
+    def calculate_contour_area(self, contour):
+        """Calculate the contour_area enclosed by the contour."""
+        contour_area = 0
+        for i in range(len(contour)):
+            contour_area += contour[i][0] * contour[(i + 1) % len(contour)][1] - contour[i][1] * contour[(i + 1) % len(contour)][0]
+        return 0.5 * np.abs(contour_area)
+    
+    def generate_chain_code(self, contour):
+        """Generate the chaincode for the contour."""
+        chaincode = []
+        for i in range(len(contour)):
+            x_diff = contour[(i + 1) % len(contour)][0] - contour[i][0]
+            y_diff = contour[(i + 1) % len(contour)][1] - contour[i][1]
+            chaincode.append((x_diff, y_diff))
+        return chaincode
     
     # def greedy_snake(self, image, contour, alpha=4, beta=1,gamma = 1, iterations=100):
     #     """Greedy algorithm to adjust contour points within a 5x5 window."""
