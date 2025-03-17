@@ -356,21 +356,22 @@ def detect_circles_hough(edges, vote_threshold_percent=50):
     
     # Define the range of possible radii
     min_radius = 10
-    max_radius = min(height, width) // 2
-    radii_range = np.arange(min_radius, max_radius + 1, 2)  # Step of 2 for efficiency
+    max_radius = 60
+    radius_step = 5
+    radius_range = np.arange(min_radius, max_radius + 1, radius_step)  
     
     # Initialize the accumulator (3D: y, x, radius)
-    accumulator = np.zeros((height, width, len(radii_range)), dtype=np.int32)
+    accumulator = np.zeros((height, width, len(radius_range)), dtype=np.int32)
     
     # Get edge points
     edge_points = np.argwhere(edges > 0)
-    
+    degree_step = 10  
     # For each edge point, vote in the accumulator
     for y, x in edge_points:
         # For each possible radius
-        for r_idx, radius in enumerate(radii_range):
+        for r_idx, radius in enumerate(radius_range):
             # For each angle (full circle: 0 to 360 degrees)
-            for angle in range(0, 360, 5):  # Step of 5 degrees for efficiency
+            for angle in range(0, 360, degree_step):  
                 # Convert angle to radians
                 theta = angle * np.pi / 180
                 
@@ -395,14 +396,14 @@ def detect_circles_hough(edges, vote_threshold_percent=50):
     # Find circles above the threshold
     for y in range(1, height - 1):
         for x in range(1, width - 1):
-            for r_idx in range(len(radii_range)):
+            for r_idx in range(len(radius_range)):
                 votes = accumulator[y, x, r_idx]
                 
                 # Check if it's above threshold
                 if votes > vote_threshold:
                     is_local_max = True
                     
-                    # Check neighborhood for non-maxima suppression (simpler version)
+                    # Check neighborhood for non-maxima suppression 
                     for dy in [-1, 0, 1]:
                         for dx in [-1, 0, 1]:
                             for dr in [-1, 0, 1]:
@@ -410,7 +411,7 @@ def detect_circles_hough(edges, vote_threshold_percent=50):
                                     continue
                                 ny, nx, nr = y + dy, x + dx, r_idx + dr
                                 if (0 <= ny < height and 0 <= nx < width and 
-                                    0 <= nr < len(radii_range) and 
+                                    0 <= nr < len(radius_range) and 
                                     accumulator[ny, nx, nr] > votes):
                                     is_local_max = False
                                     break
@@ -420,13 +421,129 @@ def detect_circles_hough(edges, vote_threshold_percent=50):
                             break
                     
                     if is_local_max:
-                        radius = radii_range[r_idx]
+                        radius = radius_range[r_idx]
                         detected_circles.append((x, y, radius, votes))
     
     # Sort circles by vote count (descending)
     detected_circles.sort(key=lambda x: x[3], reverse=True)
     
     return detected_circles
+
+# def detect_ellipses_hough(edges, vote_threshold_percent=50):
+#     """
+#     Detect ellipses in an edge image using Hough transform.
+    
+#     Returns:
+#     list: List of detected ellipses in (center_x, center_y, a, b, angle, votes) format
+#     """
+#     height, width = edges.shape
+    
+#     # Define parameter ranges
+#     a_range = np.arange(10, 60, 5)  # Major axis
+#     b_range = np.arange(5, 50, 5)   # Minor axis
+#     angle_range = np.arange(0, 180, 10) * np.pi / 180    # Orientation in radians
+    
+#     # Initialize the accumulator (5D: center_y, center_x, a, b, angle)
+#     # This is a very big accumulator, so we use a dictionary for sparse storage
+#     accumulator = {}
+    
+#     # Get edge points and their gradients
+#     edge_points = np.argwhere(edges > 0)
+    
+#     # For gradient estimation, use Sobel operators
+#     grad_x = cv2.Sobel(edges, cv2.CV_64F, 1, 0, ksize=3)
+#     grad_y = cv2.Sobel(edges, cv2.CV_64F, 0, 1, ksize=3)
+    
+#     # Voting process - simplified for computational efficiency
+#     # For each edge point and each set of ellipse parameters
+#     for i, (y, x) in enumerate(edge_points):
+#         # Calculate gradient direction at this point
+#         gx = grad_x[y, x]
+#         gy = grad_y[y, x]
+#         gradient_mag = np.sqrt(gx*gx + gy*gy)
+        
+#         if gradient_mag > 0:
+#             # Normalized gradient direction
+#             nx = gx / gradient_mag
+#             ny = gy / gradient_mag
+            
+#             # For each major axis length
+#             for a in a_range:
+#                 # For computational efficiency, only check a subset of b values
+#                 for b_idx, b in enumerate(b_range):
+#                     if b > a:  # Major axis should be >= minor axis
+#                         continue
+                    
+#                     # For each orientation
+#                     for angle in angle_range:
+#                         # Ellipse parametric equations
+#                         # Calculate possible center coordinates based on gradient direction
+#                         cos_angle = np.cos(angle)
+#                         sin_angle = np.sin(angle)
+                        
+#                         # We use gradient information to constrain center votes
+#                         # Based on the fact that the gradient points towards the center
+#                         for t in [-1, 1]:  # Try both directions of the gradient
+#                             # Calculate parameters for ellipse equation
+#                             x_dir = t * nx
+#                             y_dir = t * ny
+                            
+#                             # Transform to ellipse coordinate system
+#                             x_rot = x_dir * cos_angle + y_dir * sin_angle
+#                             y_rot = -x_dir * sin_angle + y_dir * cos_angle
+                            
+#                             # Scale to account for ellipse shape
+#                             x_rot *= a
+#                             y_rot *= b
+                            
+#                             # Transform back to image coordinates
+#                             dx = x_rot * cos_angle - y_rot * sin_angle
+#                             dy = x_rot * sin_angle + y_rot * cos_angle
+                            
+#                             # Calculate center
+#                             center_x = int(x + dx)
+#                             center_y = int(y + dy)
+                            
+#                             # Check if center is within image boundaries
+#                             if 0 <= center_y < height and 0 <= center_x < width:
+#                                 # Convert parameters to indices
+#                                 a_idx = np.argmin(np.abs(a_range - a))
+#                                 angle_idx = np.argmin(np.abs(angle_range - angle))
+                                
+#                                 # Vote in accumulator
+#                                 key = (center_y, center_x, a_idx, b_idx, angle_idx)
+#                                 if key in accumulator:
+#                                     accumulator[key] += 1
+#                                 else:
+#                                     accumulator[key] = 1
+    
+#     # Find the maximum number of votes
+#     max_votes = 0
+#     if accumulator:
+#         max_votes = max(accumulator.values())
+    
+#     if max_votes == 0:
+#         return []  # No ellipses detected
+    
+#     # Calculate vote threshold
+#     vote_threshold = int(max_votes * vote_threshold_percent / 100)
+    
+#     # Find ellipses above the threshold
+#     detected_ellipses = []
+#     for key, votes in accumulator.items():
+#         if votes > vote_threshold:
+#             center_y, center_x, a_idx, b_idx, angle_idx = key
+#             a = a_range[a_idx]
+#             b = b_range[b_idx]
+#             angle = angle_range[angle_idx] * 180 / np.pi  # Convert back to degrees
+#             detected_ellipses.append((center_x, center_y, a, b, angle, votes))
+    
+#     # Sort ellipses by vote count (descending)
+#     detected_ellipses.sort(key=lambda x: x[5], reverse=True)
+    
+#     return detected_ellipses
+
+
 
 def detect_ellipses_hough(edges, vote_threshold_percent=50):
     """
@@ -438,86 +555,92 @@ def detect_ellipses_hough(edges, vote_threshold_percent=50):
     height, width = edges.shape
     
     # Define parameter ranges
-    a_range = np.arange(10, min(height, width) // 3, 5)  # Major axis
-    b_range = np.arange(5, min(height, width) // 4, 5)   # Minor axis
-    angle_range = np.arange(0, 180, 10) * np.pi / 180    # Orientation in radians
+    a_range = np.arange(10, 60, 5)  # Major axis
+    b_range = np.arange(5, 50, 5)   # Minor axis
+    angle_range = np.arange(0, 180, 10) * np.pi / 180  # Orientation in radians
     
-    # Initialize the accumulator (5D: center_y, center_x, a, b, angle)
-    # This is a very big accumulator, so we use a dictionary for sparse storage
+    # Initialize the accumulator
     accumulator = {}
     
-    # Get edge points and their gradients
+    # Get edge points
     edge_points = np.argwhere(edges > 0)
     
-    # For gradient estimation, use Sobel operators
-    sobel_x = np.array([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]], dtype=np.float32)
-    sobel_y = np.array([[-1, -2, -1], [0, 0, 0], [1, 2, 1]], dtype=np.float32)
+    if len(edge_points) == 0:
+        print("No edge points detected!")
+        return []
     
-    grad_x = convolve(edges, sobel_x)
-    grad_y = convolve(edges, sobel_y)
+    # Calculate gradients
+    grad_x = cv2.Sobel(edges, cv2.CV_64F, 1, 0, ksize=3)
+    grad_y = cv2.Sobel(edges, cv2.CV_64F, 0, 1, ksize=3)
     
-    # Voting process - simplified for computational efficiency
-    # For each edge point and each set of ellipse parameters
+    print(f"Found {len(edge_points)} edge points")
+    
+    # Voting process
+    total_votes = 0
     for i, (y, x) in enumerate(edge_points):
-        # Calculate gradient direction at this point
         gx = grad_x[y, x]
         gy = grad_y[y, x]
         gradient_mag = np.sqrt(gx*gx + gy*gy)
         
-        if gradient_mag > 0:
-            # Normalized gradient direction
-            nx = gx / gradient_mag
-            ny = gy / gradient_mag
-            
-            # For each major axis length
-            for a in a_range:
-                # For computational efficiency, only check a subset of b values
-                for b_idx, b in enumerate(b_range):
-                    if b > a:  # Major axis should be >= minor axis
-                        continue
+        if gradient_mag < 1e-6:  # Skip points with weak gradient
+            continue
+        
+        # Normalized gradient direction
+        nx = gx / gradient_mag
+        ny = gy / gradient_mag
+        
+        # For each major axis
+        for a_idx, a in enumerate(a_range):
+            # For each minor axis
+            for b_idx, b in enumerate(b_range):
+                if b > a:  # Major axis should be >= minor axis
+                    continue
+                
+                # For each orientation
+                for angle_idx, angle in enumerate(angle_range):
+                    cos_angle = np.cos(angle)
+                    sin_angle = np.sin(angle)
                     
-                    # For each orientation
-                    for angle in angle_range:
-                        # Ellipse parametric equations
-                        # Calculate possible center coordinates based on gradient direction
-                        cos_angle = np.cos(angle)
-                        sin_angle = np.sin(angle)
+                    # Key correction: For ellipses, the gradient direction is 
+                    # related to the center but in a more complex way
+                    # We need to consider both the ellipse geometry and rotation
+                    for t in [-1, 1]:  # Try both directions
+                        # Convert gradient to ellipse coordinates
+                        gx_rot = nx * cos_angle + ny * sin_angle
+                        gy_rot = -nx * sin_angle + ny * cos_angle
                         
-                        # We use gradient information to constrain center votes
-                        # Based on the fact that the gradient points towards the center
-                        for t in [-1, 1]:  # Try both directions of the gradient
-                            # Calculate parameters for ellipse equation
-                            x_dir = t * nx
-                            y_dir = t * ny
+                        # The key correction - proper distance estimation along ellipse normal
+                        if abs(gx_rot) > 1e-6 or abs(gy_rot) > 1e-6:
+                            # Normalize rotated gradient
+                            mag_rot = np.sqrt(gx_rot**2 + gy_rot**2)
+                            gx_rot /= mag_rot
+                            gy_rot /= mag_rot
                             
-                            # Transform to ellipse coordinate system
-                            x_rot = x_dir * cos_angle + y_dir * sin_angle
-                            y_rot = -x_dir * sin_angle + y_dir * cos_angle
+                            # Calculate distances to ellipse center
+                            # This is the crucial part - uses ellipse parametric equation
+                            # to find center from edge point and gradient direction
+                            dx_rot = t * a * a * gx_rot
+                            dy_rot = t * b * b * gy_rot
                             
-                            # Scale to account for ellipse shape
-                            x_rot *= a
-                            y_rot *= b
+                            # Rotate back to image coordinates
+                            dx = dx_rot * cos_angle - dy_rot * sin_angle
+                            dy = dx_rot * sin_angle + dy_rot * cos_angle
                             
-                            # Transform back to image coordinates
-                            dx = x_rot * cos_angle - y_rot * sin_angle
-                            dy = x_rot * sin_angle + y_rot * cos_angle
-                            
-                            # Calculate center
+                            # Calculate potential center
                             center_x = int(x + dx)
                             center_y = int(y + dy)
                             
                             # Check if center is within image boundaries
                             if 0 <= center_y < height and 0 <= center_x < width:
-                                # Convert parameters to indices
-                                a_idx = np.argmin(np.abs(a_range - a))
-                                angle_idx = np.argmin(np.abs(angle_range - angle))
-                                
                                 # Vote in accumulator
                                 key = (center_y, center_x, a_idx, b_idx, angle_idx)
                                 if key in accumulator:
                                     accumulator[key] += 1
                                 else:
                                     accumulator[key] = 1
+                                total_votes += 1
+    
+    print(f"Total votes cast: {total_votes}")
     
     # Find the maximum number of votes
     max_votes = 0
@@ -525,10 +648,12 @@ def detect_ellipses_hough(edges, vote_threshold_percent=50):
         max_votes = max(accumulator.values())
     
     if max_votes == 0:
-        return []  # No ellipses detected
+        print("No votes in accumulator")
+        return []
     
     # Calculate vote threshold
     vote_threshold = int(max_votes * vote_threshold_percent / 100)
+    print(f"Max votes: {max_votes}, Threshold: {vote_threshold}")
     
     # Find ellipses above the threshold
     detected_ellipses = []
@@ -537,17 +662,36 @@ def detect_ellipses_hough(edges, vote_threshold_percent=50):
             center_y, center_x, a_idx, b_idx, angle_idx = key
             a = a_range[a_idx]
             b = b_range[b_idx]
-            angle = angle_range[angle_idx] * 180 / np.pi  # Convert back to degrees
+            angle = angle_range[angle_idx] * 180 / np.pi  # Convert to degrees
             detected_ellipses.append((center_x, center_y, a, b, angle, votes))
     
     # Sort ellipses by vote count (descending)
     detected_ellipses.sort(key=lambda x: x[5], reverse=True)
     
-    return detected_ellipses
+    # Non-maximal suppression to remove overlapping ellipses
+    final_ellipses = []
+    for e1 in detected_ellipses:
+        overlapping = False
+        for e2 in final_ellipses:
+            # Check if centers are close
+            dist = np.sqrt((e1[0] - e2[0])**2 + (e1[1] - e2[1])**2)
+            size_avg = (e1[2] + e1[3] + e2[2] + e2[3]) / 4
+            if dist < size_avg * 0.5:
+                overlapping = True
+                break
+        
+        if not overlapping:
+            final_ellipses.append(e1)
+    
+    print(f"Detected {len(final_ellipses)} ellipses after filtering")
+    return final_ellipses
+
+
+
 
 def draw_detected_shapes(result, shapes, line_color=(0, 255, 0), 
                         circle_color=(0, 0, 255), ellipse_color=(255, 0, 0), 
-                        line_thickness=2):
+                        line_thickness=1):
     """
     Draw detected shapes on the input image.
     
