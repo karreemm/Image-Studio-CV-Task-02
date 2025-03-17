@@ -63,6 +63,8 @@ class Snake():
         snake = np.array(contour_points)
         height, width = image.shape[:2]
         image_energy = self.compute_image_energy(image)
+        if search_window_size % 2 == 0:
+            search_window_size += 1
         search_window_size = (search_window_size - 1) // 2
         
         for iteration in range(max_iterations):
