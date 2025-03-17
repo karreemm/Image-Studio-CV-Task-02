@@ -7,7 +7,7 @@ import cv2
 from helper_functions.compile_qrc import compile_qrc
 from classes.image import Image
 from classes.controller import Controller
-from classes.enums import ImageSource , Channel
+from classes.enums import ContourMode
 from classes.contourDrawingWidget import ContourDrawingWidget
 from classes.snake import Snake
 compile_qrc()
@@ -114,6 +114,45 @@ class MainWindow(QMainWindow):
         self.contour_perimeter = self.findChild(QLabel , "snakePerimeter")
         self.contour_area = self.findChild(QLabel , "snakeArea")
         self.chain_code = self.findChild(QLabel , "snakeCodeChain")
+        
+        # Initialize Snake Contour Drawing Shape
+        self.drawing_mode_combobox = self.findChild(QComboBox , "snakeModelModeCombobox")
+        self.drawing_mode_combobox.currentIndexChanged.connect(self.select_contour_drawing_mode)
+        
+        self.drawing_shapes_frame = self.findChild(QFrame , "predefinedShapesFrame")
+        self.drawing_shapes_frame.hide()
+        
+        self.circle_predefined_shape_button = self.findChild(QPushButton , "circleButton")
+        self.circle_predefined_shape_button.clicked.connect(self.select_circle_predefined_shape)
+        
+        self.rectangle_predefined_shape_button = self.findChild(QPushButton , "squareButton")
+        self.rectangle_predefined_shape_button.clicked.connect(self.select_rectangle_predefined_shape)
+        
+        # Initialize Snake Parameters
+        # Alpha
+        self.snake_alpha = 1
+        self.snake_alpha_line_edit = self.findChild(QLineEdit , "snakeAlphaInput")
+        self.snake_alpha_line_edit.setText("1.0")
+        self.snake_alpha_line_edit.textChanged.connect(self.edit_snake_alpha)
+        
+        # Beta
+        self.snake_beta = 1
+        self.snake_beta_line_edit = self.findChild(QLineEdit , "snakeBetaInput")
+        self.snake_beta_line_edit.setText("1.0")
+        self.snake_beta_line_edit.textChanged.connect(self.edit_snake_beta)
+        
+        # Gamma
+        self.snake_gamma = 1
+        self.snake_gamma_line_edit = self.findChild(QLineEdit , "snakeGammaInput")
+        self.snake_gamma_line_edit.setText("1.0")
+        self.snake_gamma_line_edit.textChanged.connect(self.edit_snake_gamma)
+        
+        # Window Size
+        self.snake_window_size = 1
+        self.snake_window_size_line_edit = self.findChild(QLineEdit , "snakeWindowSizeInput")
+        self.snake_window_size_line_edit.setText("5")
+        self.snake_window_size_line_edit.textChanged.connect(self.edit_snake_window_size)
+        
         # Initialize Controller
         self.controller = Controller(self.input_image , self.output_image ,
                                     self.contour_drawing_widget , self.output_image_label)
@@ -132,7 +171,7 @@ class MainWindow(QMainWindow):
         self.output_image_label.setScaledContents(True)
 
     def apply_snake_greedy(self):
-        self.controller.apply_snake_greedy()
+        self.controller.apply_snake_greedy(self.snake_alpha , self.snake_beta , self.snake_gamma , self.snake_window_size)
         self.update_contour_perimeter()
         self.update_contour_area()  
         self.update_chain_code()
@@ -249,7 +288,48 @@ class MainWindow(QMainWindow):
     def detect_lines(self):
         self.isCannyLinesDetected = not self.isCannyLinesDetected
 
+    def select_contour_drawing_mode(self , index):
+        if(index == 1):
+            self.contour_drawing_widget.current_mode = ContourMode.RECTANGLE
+            self.drawing_shapes_frame.show()
+        elif(index == 2):
+            self.contour_drawing_widget.current_mode = ContourMode.FREE
+            self.drawing_shapes_frame.hide()
 
+    def select_circle_predefined_shape(self):
+        self.contour_drawing_widget.current_mode = ContourMode.CIRCLE
+    
+    def select_rectangle_predefined_shape(self):
+        self.contour_drawing_widget.current_mode = ContourMode.RECTANGLE
+        
+    def edit_snake_alpha(self , text):
+        try:
+            self.snake_alpha = float(text)
+        except ValueError:
+            self.snake_alpha = 1.0
+            self.snake_alpha_line_edit.setText("1.0")
+    
+    def edit_snake_beta(self , text):
+        try:
+            self.snake_beta = float(text)
+        except ValueError:
+            self.snake_beta = 1.0
+            self.snake_beta_line_edit.setText("1.0")
+    
+    def edit_snake_gamma(self , text):
+        try:
+            self.snake_gamma = float(text)
+        except ValueError:
+            self.snake_gamma = 1.0
+            self.snake_gamma_line_edit.setText("1.0")
+    
+    def edit_snake_window_size(self , text):
+        try:
+            self.snake_window_size = int(text)
+        except ValueError:
+            self.snake_window_size = 5
+            self.snake_window_size_line_edit.setText("5")
+    
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     window = MainWindow()

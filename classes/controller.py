@@ -109,11 +109,11 @@ class Controller():
 
 
 
-    def apply_snake_greedy(self):
+    def apply_snake_greedy(self ,alpha , beta , gamma ,window_size):
         initial_contour_points = self.contour_drawing_widget.contour_points
         self.snake.convert_qpoints_to_list(initial_contour_points)
         grey_image = convert_rgb_to_gray(self.input_image.input_image)
-        new_contour_list = self.snake.active_contour_greedy( grey_image, self.snake.contour_points)
+        new_contour_list = self.snake.active_contour_greedy( grey_image, self.snake.contour_points , alpha= alpha , beta=beta , gamma= gamma , search_window_size= window_size)
         new_contour_qpoints = self.snake.convert_list_to_qpoints(new_contour_list)
         self.contour_drawing_widget.contour_points = new_contour_qpoints
         self.contour_drawing_widget.update()
