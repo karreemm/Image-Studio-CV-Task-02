@@ -16,7 +16,12 @@ class ContourDrawingWidget(QLabel):
         self.start_point = None  # Start point of shape
         self.end_point = None  # End point of shape
         self.contour_points = []  # Free-draw contour points
-        self.current_mode = ContourMode.RECTANGLE  # Default mode (free draw)
+        self.current_mode = ContourMode.FREE  # Default mode (free draw)
+        self.drawing_enabled = True
+    
+    def setDrawingEnabled(self, enabled):
+        """Enable or disable drawing functionality."""
+        self.drawing_enabled = enabled
 
 
     # def set_mode(self, mode):
@@ -29,6 +34,8 @@ class ContourDrawingWidget(QLabel):
 
     def mousePressEvent(self, event):
         """Handles mouse press event to start drawing."""
+        if (self.drawing_enabled == False):
+            return
         if event.button() == Qt.LeftButton:
             self.drawing = True
             self.start_point = event.pos()
@@ -41,6 +48,8 @@ class ContourDrawingWidget(QLabel):
 
     def mouseMoveEvent(self, event):
         """Handles mouse movement for dynamic drawing."""
+        if (self.drawing_enabled == False):
+            return
         if self.drawing:
             if self.current_mode == ContourMode.FREE:
                 self.contour_points.append(event.pos())  # Add points dynamically
@@ -58,6 +67,8 @@ class ContourDrawingWidget(QLabel):
 
     def mouseReleaseEvent(self, event):
         """Stops drawing when the mouse is released."""
+        if (self.drawing_enabled == False):
+            return
         if event.button() == Qt.LeftButton:
             self.drawing = False
             self.update()
@@ -106,7 +117,7 @@ class ContourDrawingWidget(QLabel):
         x1, y1 = self.start_point.x(), self.start_point.y()
         x2, y2 = self.end_point.x(), self.end_point.y()
 
-        num_points_per_edge = 10  # More points for smoother edges
+        num_points_per_edge = 500  # More points for smoother edges
 
         # Function to generate intermediate points between two points
         def interpolate_points(p1, p2, num_points):
@@ -135,7 +146,7 @@ class ContourDrawingWidget(QLabel):
         center_y = (self.start_point.y() + self.end_point.y()) // 2
         radius = abs(self.start_point.x() - self.end_point.x()) // 2  # Approximate radius
 
-        num_points = 100  # Increase for a smoother circle
+        num_points = 500  # Increase for a smoother circle
         self.contour_points = [
             QPoint(int(center_x + radius * math.cos(theta)), 
                 int(center_y + radius * math.sin(theta))) 

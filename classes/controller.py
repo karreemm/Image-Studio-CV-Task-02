@@ -17,8 +17,13 @@ class Controller():
     def browse_input_image(self):
         self.input_image.select_image()
         self.output_image = deepcopy(self.input_image)
-        self.output_image_label.setPixmap(self.numpy_to_qpixmap(self.output_image.input_image))
+        self.output_image_label.pixmap = self.numpy_to_qpixmap(self.output_image.input_image)
+        self.output_image_label.setPixmap(self.output_image_label.pixmap)
         self.output_image_label.setScaledContents(True)
+        self.output_image_label.contour_points = []
+        self.output_image_label.image = self.output_image_label.pixmap.copy()
+        self.output_image_label.setDrawingEnabled(False)
+        self.output_image_label.update()
     
     def update_contour_drawing_widget_params(self):
         self.contour_drawing_widget.pixmap = self.numpy_to_qpixmap(self.input_image.input_image)
@@ -117,6 +122,6 @@ class Controller():
         blurred_image = self.snake.apply_gaussian_blur(grey_image , 5)
         new_contour_list = self.snake.active_contour_greedy( blurred_image, self.snake.contour_points , alpha= alpha , beta=beta , gamma= gamma , search_window_size= window_size)
         new_contour_qpoints = self.snake.convert_list_to_qpoints(new_contour_list)
-        self.contour_drawing_widget.contour_points = new_contour_qpoints
-        self.contour_drawing_widget.update()
+        self.output_image_label.contour_points = new_contour_qpoints
+        self.output_image_label.update()
         

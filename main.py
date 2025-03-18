@@ -46,9 +46,9 @@ class MainWindow(QMainWindow):
         
         # Initialize Output Image Frame
         self.output_image_frame = self.findChild(QFrame , "outputFrame")
-        self.output_image_label = QLabel(self.output_image_frame)
+        self.output_contour_drawing = ContourDrawingWidget(self.output_image_frame)
         self.output_image_layout = QVBoxLayout(self.output_image_frame)
-        self.output_image_layout.addWidget(self.output_image_label)
+        self.output_image_layout.addWidget(self.output_contour_drawing)
         self.output_image_frame.setLayout(self.output_image_layout)
 
         # Initialize Canny Edge Detection Input Fields
@@ -155,7 +155,7 @@ class MainWindow(QMainWindow):
         
         # Initialize Controller
         self.controller = Controller(self.input_image , self.output_image ,
-                                    self.contour_drawing_widget , self.output_image_label)
+                                    self.contour_drawing_widget , self.output_contour_drawing)
         
     def browse_image(self):
         self.controller.browse_input_image()
@@ -167,8 +167,12 @@ class MainWindow(QMainWindow):
         self.t_high_input.setText("100")
 
         # Update the output image display
-        self.output_image_label.setPixmap(self.controller.numpy_to_qpixmap(self.input_image.input_image))
-        self.output_image_label.setScaledContents(True)
+        self.output_contour_drawing.pixmap = self.controller.numpy_to_qpixmap(self.input_image.input_image)
+        self.output_contour_drawing.setPixmap(self.output_contour_drawing.pixmap)
+        self.output_contour_drawing.setScaledContents(True)
+        self.output_contour_drawing.image = self.output_contour_drawing.pixmap.copy()
+        self.output_contour_drawing.contour_points.clear()
+        self.output_contour_drawing.update()
 
     def apply_snake_greedy(self):
         self.controller.apply_snake_greedy(self.snake_alpha , self.snake_beta , self.snake_gamma , self.snake_window_size)
@@ -222,8 +226,8 @@ class MainWindow(QMainWindow):
     #         self.output_image.output_image = edges_rgb
             
     #         # Update the output image display
-    #         self.output_image_label.setPixmap(self.controller.numpy_to_qpixmap(edges_rgb))
-    #         self.output_image_label.setScaledContents(True)
+    #         self.output_contour_drawing.setPixmap(self.controller.numpy_to_qpixmap(edges_rgb))
+    #         self.output_contour_drawing.setScaledContents(True)
 
     def apply_canny_edge_detection(self):
         
@@ -243,8 +247,11 @@ class MainWindow(QMainWindow):
                               detect_lines, detect_circles, detect_ellipses,
                               line_vote_threshold, circle_vote_threshold, ellipse_vote_threshold)
         
-        self.output_image_label.setPixmap(self.controller.numpy_to_qpixmap(result_image))
-        self.output_image_label.setScaledContents(True)
+        self.output_contour_drawing.pixmap = self.controller.numpy_to_qpixmap(result_image)
+        self.output_contour_drawing.setPixmap(self.output_contour_drawing.pixmap)
+        self.output_contour_drawing.setScaledContents(True)
+        self.output_contour_drawing.image = self.output_contour_drawing.pixmap.copy()
+        self.output_contour_drawing.update()
 
     def update_sigma(self):
             try:
