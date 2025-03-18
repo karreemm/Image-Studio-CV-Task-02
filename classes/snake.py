@@ -5,7 +5,6 @@ import cv2
 import numpy as np
 from classes.enums import ContourMode
 from classes.canny import convolve
-
 class Snake():
     def __init__(self):
         self.contour_points = []
@@ -37,7 +36,7 @@ class Snake():
         external_energy = np.square(np.abs(gradient_x)) + np.square(np.abs(gradient_y))
         if external_energy.max() > 0:
             external_energy = external_energy / external_energy.max()
-        return (1.0 - external_energy)
+        return ( -1 * external_energy)
     
     def compute_weighted_internal_energy(self, previous_point, new_x, new_y, next_point, alpha, beta):
         """
@@ -136,6 +135,12 @@ class Snake():
         vertical_edges = convolve(image, horizontal_gradient_matrix)
         horizontal_edges = convolve(image, vertical_gradient_matrix)
         return vertical_edges , horizontal_edges
+    
+    def apply_gaussian_blur(self , image , filter_size , sigma = 1):
+        x, y = np.meshgrid(np.arange(-filter_size // 2,(filter_size // 2 )+1), np.arange(-filter_size // 2,(filter_size // 2 )+1))  
+        kernel = np.exp(-(x**2 + y**2)/(2*sigma**2))/(2*np.pi*sigma**2) 
+        kernel = kernel / np.sum(kernel)
+        return convolve(image , kernel)
     
     # def greedy_snake(self, image, contour, alpha=4, beta=1,gamma = 1, iterations=100):
     #     """Greedy algorithm to adjust contour points within a 5x5 window."""
