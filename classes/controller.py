@@ -83,6 +83,7 @@ class Controller():
             # Step 2: Detect shapes if any options are selected
             if detect_lines or detect_circles or detect_ellipses:
                 detected_shapes = detect_shapes(
+                    self.input_image.input_image,
                     edges, 
                     detect_lines=detect_lines, 
                     detect_circles=detect_circles, 
