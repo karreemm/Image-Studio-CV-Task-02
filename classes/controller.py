@@ -5,6 +5,7 @@ from classes.snake import Snake
 from copy import deepcopy
 from classes.canny import convert_rgb_to_gray
 from classes.image import Image
+from classes.canny import apply_canny_edge_detection, detect_shapes, draw_detected_shapes
 
 class Controller():
     def __init__(self , input_image , output_image ,contour_drawing_widget , output_image_label):
@@ -71,8 +72,6 @@ class Controller():
     def apply_canny_edge_detection(self, sigma, low_threshold, high_threshold, 
                               detect_lines=False, detect_circles=False, detect_ellipses=False,
                               line_vote_threshold=50, circle_vote_threshold=50, ellipse_vote_threshold=50):
-        from classes.canny import apply_canny_edge_detection, detect_shapes, draw_detected_shapes
-                
         if self.input_image.input_image is not None:
             # Step 1: Apply Canny edge detection
             edges = apply_canny_edge_detection(self.input_image.input_image, sigma, low_threshold, high_threshold)
@@ -118,9 +117,8 @@ class Controller():
     def apply_snake_greedy(self ,alpha , beta , gamma ,window_size):
         initial_contour_points = self.contour_drawing_widget.contour_points
         self.snake.convert_qpoints_to_list(initial_contour_points)
-        grey_image = convert_rgb_to_gray(self.input_image.input_image)
-        blurred_image = self.snake.apply_gaussian_blur(grey_image , 5)
-        new_contour_list = self.snake.active_contour_greedy( blurred_image, self.snake.contour_points , alpha= alpha , beta=beta , gamma= gamma , search_window_size= window_size)
+        thresholded_image = apply_canny_edge_detection(self.input_image.input_image , 1 ,40,150)
+        new_contour_list = self.snake.active_contour_greedy( thresholded_image, self.snake.contour_points , alpha= alpha , beta=beta , gamma= gamma , search_window_size= window_size)
         new_contour_qpoints = self.snake.convert_list_to_qpoints(new_contour_list)
         self.output_image_label.contour_points = new_contour_qpoints
         self.output_image_label.update()
