@@ -342,8 +342,51 @@ def detect_lines_hough(edges, vote_threshold_percent=50):
     
     # Sort lines by vote count (descending)
     detected_lines.sort(key=lambda x: x[2], reverse=True)
+    final_lines = merge_similar_lines(detected_lines)
     
-    return detected_lines
+    return final_lines
+
+
+def merge_similar_lines(lines, rho_threshold=10, theta_threshold=np.pi/36):  # theta_threshold ≈ 5 degrees
+    if not lines:
+        return []
+    
+    merged_lines = []
+    lines = sorted(lines, key=lambda x: x[2], reverse=True)  # Sort by votes
+    
+    used = [False] * len(lines)
+    
+    for i, (rho1, theta1, votes1) in enumerate(lines):
+        if used[i]:
+            continue
+            
+        used[i] = True
+        similar_lines = [(rho1, theta1, votes1)]
+        
+        for j, (rho2, theta2, votes2) in enumerate(lines[i+1:], i+1):
+            if used[j]:
+                continue
+                
+            # Check if lines are similar
+            if (abs(rho1 - rho2) < rho_threshold and 
+                (abs(theta1 - theta2) < theta_threshold or 
+                 abs(abs(theta1 - theta2) - np.pi) < theta_threshold)):
+                used[j] = True
+                similar_lines.append((rho2, theta2, votes2))
+        
+        # Average the parameters of similar lines, weighted by votes
+        total_votes = sum(line[2] for line in similar_lines)
+        avg_rho = sum(line[0] * line[2] for line in similar_lines) / total_votes
+        
+        # Careful with theta averaging - need to handle wraparound
+        sin_avg = sum(np.sin(line[1]) * line[2] for line in similar_lines) / total_votes
+        cos_avg = sum(np.cos(line[1]) * line[2] for line in similar_lines) / total_votes
+        avg_theta = np.arctan2(sin_avg, cos_avg)
+        
+        merged_lines.append((avg_rho, avg_theta, total_votes))
+    
+    return merged_lines
+
 
 def detect_circles_hough(edges, vote_threshold_percent=50):
     """
