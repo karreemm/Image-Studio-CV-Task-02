@@ -148,7 +148,7 @@ class MainWindow(QMainWindow):
         self.snake_gamma_line_edit.textChanged.connect(self.edit_snake_gamma)
         
         # Window Size
-        self.snake_window_size = 1
+        self.snake_window_size = 5
         self.snake_window_size_line_edit = self.findChild(QLineEdit , "snakeWindowSizeInput")
         self.snake_window_size_line_edit.setText("5")
         self.snake_window_size_line_edit.textChanged.connect(self.edit_snake_window_size)

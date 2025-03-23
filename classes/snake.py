@@ -31,18 +31,17 @@ class Snake():
         # gradient_y = np.zeros(image.shape, dtype=np.float64)
         # gradient_x[:, 1:-1] = image[:, 2:] - image[:, :-2]
         # gradient_y[1:-1, :] = image[2:, :] - image[:-2, :]
-        
         gradient_y , gradient_x = self.calculate_gradient_sobel(image)
-        external_energy = np.square(np.abs(gradient_x)) + np.square(np.abs(gradient_y))
-        if external_energy.max() > 0:
-            external_energy = external_energy / external_energy.max()
-        return ( -1 * external_energy)
+        external_energy_magnitude = np.sqrt((gradient_x)**2 +(gradient_y)**2)
+        # if external_energy_magnitude.max() > 0:
+        #     external_energy_magnitude = external_energy_magnitude / external_energy_magnitude.max()
+        return external_energy_magnitude**2
     
     def compute_weighted_internal_energy(self, previous_point, new_x, new_y, next_point, alpha, beta):
         """
         Compute the internal energy (continuity and curvature).
         """
-        elasticity_energy = np.sqrt((new_x - previous_point[0])**2 + (new_y - previous_point[1])**2)
+        elasticity_energy = ((new_x - previous_point[0])**2 + (new_y - previous_point[1])**2 + (next_point[0] - new_x)**2 + (next_point[1] - new_y)**2)
         curvature_energy = ((previous_point[0] - 2 * new_x + next_point[0])**2 +
                             (previous_point[1] - 2 * new_y + next_point[1])**2)
         return alpha * elasticity_energy + beta * curvature_energy
@@ -51,10 +50,10 @@ class Snake():
         """
         Compute the external energy based on the image gradient.
         """
-        return gamma * image_energy[new_y, new_x]
+        return -gamma * image_energy[new_y, new_x]
 
     
-    def active_contour_greedy(self, image, contour_points, alpha=1, beta=1, gamma=1, max_iterations=100, 
+    def active_contour_greedy(self, image, contour_points, alpha=1, beta=1, gamma=1, max_iterations=250, 
                             search_window_size=5):
         """
         Implement the active contour (snake) algorithm using a greedy approach.
@@ -88,13 +87,13 @@ class Snake():
                             
                             if total_energy < min_energy:
                                 min_energy, optimal_point = total_energy, (new_x, new_y)
-                                snake_energy[i] = min_energy
                 
+                            snake_energy[i] = min_energy
                 new_snake[i] = optimal_point
             
             snake = new_snake
             
-            # if iteration > 0 and np.mean(snake_energy) < 0.01:
+            # if iteration > 0 and np.mean(snake_energy) < 0.0001:
             #     print(f"Converged after {iteration + 1} iterations")
             #     break
         
@@ -130,10 +129,13 @@ class Snake():
         return chaincode
     
     def calculate_gradient_sobel(self , image):
-        horizontal_gradient_matrix = np.array([[2, 2, 4, 2, 2], [1, 1, 2, 1, 1], [0, 0, 0, 0, 0], [-1, -1, -2, -1, -1], [-2, -2, -4, -2, -2]] , dtype=np.float32)
-        vertical_gradient_matrix = np.array([[2, 1, 0, -1, -2], [2, 1, 0, -1, -2], [4, 2, 0, -2, -4], [2, 1, 0, -1, -2], [2, 1, 0, -1, -2]] , dtype=np.float32)
-        vertical_edges = convolve(image, horizontal_gradient_matrix)
-        horizontal_edges = convolve(image, vertical_gradient_matrix)
+        # horizontal_gradient_matrix = np.array([[2, 2, 4, 2, 2], [1, 1, 2, 1, 1], [0, 0, 0, 0, 0], [-1, -1, -2, -1, -1], [-2, -2, -4, -2, -2]] , dtype=np.float32)
+        # vertical_gradient_matrix = np.array([[2, 1, 0, -1, -2], [2, 1, 0, -1, -2], [4, 2, 0, -2, -4], [2, 1, 0, -1, -2], [2, 1, 0, -1, -2]] , dtype=np.float32)
+        # vertical_edges = convolve(image, horizontal_gradient_matrix)
+        # horizontal_edges = convolve(image, vertical_gradient_matrix)
+        vertical_edges = cv2.Sobel(image , cv2.CV_64F , 0, 1,ksize=11)
+        horizontal_edges = cv2.Sobel(image , cv2.CV_64F , 1, 0, ksize=11)
+
         return vertical_edges , horizontal_edges
     
     def apply_gaussian_blur(self , image , filter_size , sigma = 1):
@@ -142,6 +144,30 @@ class Snake():
         kernel = kernel / np.sum(kernel)
         return convolve(image , kernel)
     
+    def resample_contour_points(self):
+        """
+        Resample the given contour points to be evenly spaced.
+        """
+        if len(self.contour_points) < 2:
+            return self.contour_points
+        
+        # Convert QPoint to NumPy arrays
+        x_vals = np.array([p.x() for p in self.contour_points])
+        y_vals = np.array([p.y() for p in self.contour_points])
+        
+        # Compute cumulative distances
+        distances = np.sqrt(np.diff(x_vals)**2 + np.diff(y_vals)**2)
+        cumulative_distances = np.insert(np.cumsum(distances), 0, 0)
+        
+        # Generate evenly spaced distances
+        new_distances = np.linspace(0, cumulative_distances[-1], len(self.contour_points))
+        
+        # Interpolate new points
+        new_x_vals = np.interp(new_distances, cumulative_distances, x_vals)
+        new_y_vals = np.interp(new_distances, cumulative_distances, y_vals)
+        
+        self.contour_points = [QPoint(int(x), int(y)) for x, y in zip(new_x_vals, new_y_vals)]
+        
     # def greedy_snake(self, image, contour, alpha=4, beta=1,gamma = 1, iterations=100):
     #     """Greedy algorithm to adjust contour points within a 5x5 window."""
         
