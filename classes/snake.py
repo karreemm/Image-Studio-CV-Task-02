@@ -110,8 +110,7 @@ class Snake():
         self.contour_perimiter = round(self.calculate_contour_perimiter(new_snake))
         self.contour_area = round(self.calculate_contour_area(new_snake))
         self.generate_chain_code(new_snake)
-        print(f'contour_perimiter : {self.contour_perimiter}')
-        print(f'contour_area : {self.contour_area}')
+        
 
 
     def calculate_contour_perimiter(self, contour):
@@ -199,7 +198,9 @@ class Snake():
                 elif abs(x_diff) > y_diff:                # Right
                     for i in range(y_diff - abs(x_diff)):
                         self.chain_code += '0'
-    
+        formatted_chain_code = " ".join(self.chain_code[i:i+6] for i in range(0, len(self.chain_code), 6))
+        self.chain_code = formatted_chain_code
+        
     def calculate_gradient_sobel(self , image):
         vertical_edges = cv2.Sobel(image , cv2.CV_64F , 0, 1,ksize=3)
         horizontal_edges = cv2.Sobel(image , cv2.CV_64F , 1, 0, ksize=3)
