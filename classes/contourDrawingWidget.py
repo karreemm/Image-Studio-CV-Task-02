@@ -23,12 +23,13 @@ class ContourDrawingWidget(QLabel):
         """Enable or disable drawing functionality."""
         self.drawing_enabled = enabled
 
-    def resizeEvent(self, event):
-        """Resizes the drawing area while keeping the image aspect ratio."""
-        if self.pixmap:
-            scaled_pixmap = self.pixmap.scaled(self.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
-            self.setPixmap(scaled_pixmap)
-        super().resizeEvent(event)
+    # def resizeEvent(self, event):
+    #     """Resizes the drawing area while keeping the image aspect ratio."""
+    #     if self.pixmap:
+    #         scaled_pixmap = self.pixmap.scaled(self.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
+    #         self.setPixmap(scaled_pixmap)
+    #     super().resizeEvent(event)
+    
     # def set_mode(self, mode):
     #     """Change contour mode (free, rectangle, circle)."""
     #     self.current_mode = mode
@@ -81,12 +82,12 @@ class ContourDrawingWidget(QLabel):
     def paintEvent(self, event):
         """Redraws the image and overlays contours using stored contour points."""
         if self.pixmap:
-            scaled_pixmap = self.pixmap.scaled(self.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            # scaled_pixmap = self.pixmap.scaled(self.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
             painter = QPainter(self)
-            target_rect = self.rect()
-            image_rect = scaled_pixmap.rect()
-            image_rect.moveCenter(target_rect.center())
-            painter.drawPixmap(image_rect, scaled_pixmap)
+            # target_rect = self.rect()
+            # image_rect = scaled_pixmap.rect()
+            # image_rect.moveCenter(target_rect.center())
+            painter.drawPixmap(self.rect(), self.pixmap)
 
             pen = QPen(Qt.red, 2, Qt.SolidLine)
             painter.setPen(pen)
