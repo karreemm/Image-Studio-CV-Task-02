@@ -10,7 +10,7 @@ class Snake():
         self.contour_points = []  # Free-draw contour points
         self.contour_perimiter = 0
         self.contour_area = 0
-        self.chain_code = []
+        self.chain_code = ""
         
     def convert_qpoints_to_list(self, qpoints):
         
@@ -95,11 +95,10 @@ class Snake():
                 print(f"Converged after {iteration + 1} iterations")
                 break
         
-        self.contour_perimiter = round(self.calculate_contour_perimiter(snake))
-        self.contour_area = round(self.calculate_contour_area(snake))
-        print(f'contour_perimiter : {self.contour_perimiter}')
-        print(f'contour_area : {self.contour_area}')
-        
+        self.calculate_contour_perimiter(snake)
+        self.calculate_contour_area(snake)
+        self.generate_chain_code(snake)
+        self.show_difference(snake)
         return snake
 
     def calculate_contour_perimiter(self, contour):
@@ -107,24 +106,123 @@ class Snake():
         contour_perimiter = 0
         for i in range(len(contour)):
             contour_perimiter += np.linalg.norm(contour[i] - contour[(i + 1) % len(contour)])
-        return contour_perimiter
-    
+        self.contour_perimiter = round(contour_perimiter)
     
     def calculate_contour_area(self, contour):
         """Calculate the contour_area enclosed by the contour."""
         contour_area = 0
-        for i in range(len(contour)):
-            contour_area += contour[i][0] * contour[(i + 1) % len(contour)][1] - contour[i][1] * contour[(i + 1) % len(contour)][0]
-        return 0.5 * np.abs(contour_area)
+        # for i in range(len(contour)):
+        #     x1, y1 = contour[i]
+        #     x2, y2 = contour[(i + 1) % len(contour)]
+            
+        #     # Check if points are within image bounds
+        #     if x1 < 0 or x1 >= 256 or y1 < 0 or y1 >= 256:
+        #         print(f"Point ({x1}, {y1}) is out of image bounds")
+        #     if x2 < 0 or x2 >= 256 or y2 < 0 or y2 >= 256:
+        #         print(f"Point ({x2}, {y2}) is out of image bounds")
+            
+        #     contour_area += x1 * y2 - y1 * x2
+        
+        self.contour_area = round(0.5 * np.abs(contour_area))
+        print(f"Calculated contour area: {self.contour_area}")
+    # def calculate_contour_area(self, contour):
+    #     """Calculate the contour_area enclosed by the contour."""
+    #     contour_area = 0
+    #     for i in range(len(contour)):
+    #         contour_area += contour[i][0] * contour[(i + 1) % len(contour)][1] - contour[i][1] * contour[(i + 1) % len(contour)][0]
+    #     self.contour_area = round(0.5 * np.abs(contour_area))
     
     def generate_chain_code(self, contour):
         """Generate the chaincode for the contour."""
-        chaincode = []
+        self.chain_code = ""
         for i in range(len(contour)):
+            
             x_diff = contour[(i + 1) % len(contour)][0] - contour[i][0]
             y_diff = contour[(i + 1) % len(contour)][1] - contour[i][1]
-            chaincode.append((x_diff, y_diff))
-        return chaincode
+            
+            if x_diff == 0 and y_diff > 0:     # Right
+                for i in range(y_diff):
+                    self.chain_code += '0'
+            elif x_diff == 1 and y_diff == 1:   # Up right diagonal
+                self.chain_code += '1'
+            elif x_diff < 0 and y_diff == 0:   # Up
+                for i in range(abs(x_diff)):
+                    self.chain_code += '2'
+            elif x_diff == 1 and y_diff == -1:  # Up left diagonal
+                self.chain_code += '3'
+            elif x_diff == 0 and y_diff < 0:  # Left
+                for i in range(abs(y_diff)):
+                    self.chain_code += '4'
+            elif x_diff == -1 and y_diff == -1: # Down left diagonal
+                self.chain_code += '5'
+            elif x_diff > 0 and y_diff == 0:  # Down
+                for i in range(x_diff):
+                    self.chain_code += '6'
+            elif x_diff == -1 and y_diff == 1:  # Down right diagonal
+                self.chain_code += '7'
+                
+            elif x_diff > 1 and y_diff > 1:        # Down diagonal movement with right or bottom
+                for i in range(min(x_diff, y_diff)):
+                    self.chain_code += '7'
+                if x_diff > y_diff:                 # Down
+                    for i in range(x_diff - y_diff):
+                        self.chain_code += '6'
+                elif x_diff < y_diff:               # Right
+                    for i in range(y_diff - x_diff):
+                        self.chain_code += '0'
+                        
+            elif x_diff > 1 and y_diff < -1:       # Down diagonal movement with left or bottom
+                for i in range(min(x_diff, abs(y_diff))):
+                    self.chain_code += '5'
+                if x_diff > abs(y_diff):            # Down
+                    for i in range(x_diff - abs(y_diff)):
+                        self.chain_code += '6'      
+                elif x_diff < abs(y_diff):           # Left
+                    for i in range(abs(y_diff) - x_diff):
+                        self.chain_code += '4'
+                        
+            elif x_diff < -1 and y_diff < -1:      # Up Diagonal movement with left or top
+                for i in range(min(abs(x_diff), abs(y_diff))):
+                    self.chain_code += '3'
+                if abs(x_diff) > abs(y_diff):                  # Up
+                    for i in range(abs(x_diff) - abs(y_diff)):
+                        self.chain_code += '2'
+                elif abs(x_diff) < abs(y_diff):                # Left
+                    for i in range(abs(y_diff) - abs(x_diff)): 
+                        self.chain_code += '4'
+                        
+            elif x_diff < -1 and y_diff > 1:        # Up Diagonal movement with right or top
+                for i in range(min(abs(x_diff), y_diff)):
+                    self.chain_code += '1'
+                if abs(x_diff) > y_diff:                  # Up
+                    for i in range(abs(x_diff) - y_diff):
+                        self.chain_code += '2'
+                elif abs(x_diff) > y_diff:                # Right
+                    for i in range(y_diff - abs(x_diff)):
+                        self.chain_code += '0'
+        # print(f'chain_code : {self.chain_code}')
+        
+    def show_difference(self, contour):
+        """Show the difference between the image and the contour."""
+        diff_in_x = []
+        # diff_in_y = []
+        # diff_in_x_y = []
+        for i in range(len(contour)):
+            
+            x_diff = contour[(i + 1) % len(contour)][0] - contour[i][0]
+            # y_diff = contour[(i + 1) % len(contour)][1] - contour[i][1]
+            # if x_diff > 1 and y_diff > 1:
+            #     diff_in_x_y.append((x_diff, y_diff))
+            # elif x_diff > 3:
+            diff_in_x.append(x_diff)
+            # elif y_diff >3:
+            #     diff_in_y.append(y_diff)
+        # print(f'diff_in_x_y : {diff_in_x_y}')    
+        print(f'diff_in_x : {diff_in_x}')
+        # print(f'diff_in_y : {diff_in_y}')
+                
+                
+        
     
     # def greedy_snake(self, image, contour, alpha=4, beta=1,gamma = 1, iterations=100):
     #     """Greedy algorithm to adjust contour points within a 5x5 window."""
