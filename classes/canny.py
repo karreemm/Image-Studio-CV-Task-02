@@ -211,12 +211,6 @@ def apply_hysteresis_thresholding(mag, ids):
     dx = [-1, -1, -1, 0, 0, 1, 1, 1]
     dy = [-1, 0, 1, -1, 1, -1, 0, 1]
 
-    # finding all strong edges and tracing connected weak edges
-    for i_y in range(height):
-        for i_x in range(width):
-            if ids[i_y, i_x] == 2 and result[i_y, i_x] == 255:
-                trace_edge(i_y, i_x)
-    
     # edge tracing
     def trace_edge(y, x):
         result[y, x] = 255
@@ -227,6 +221,12 @@ def apply_hysteresis_thresholding(mag, ids):
             if 0 <= ny < height and 0 <= nx < width:
                 if ids[ny, nx] == 1 and result[ny, nx] == 0:
                     trace_edge(ny, nx)
+
+    # finding all strong edges and tracing connected weak edges
+    for i_y in range(height):
+        for i_x in range(width):
+            if ids[i_y, i_x] == 2 and result[i_y, i_x] == 255:
+                trace_edge(i_y, i_x)  
     
     return result
 
