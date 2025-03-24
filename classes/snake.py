@@ -1,8 +1,7 @@
-from PyQt5.QtWidgets import QLabel, QVBoxLayout, QFrame, QPushButton, QHBoxLayout, QWidget ,QApplication ,QMessageBox
-from PyQt5.QtCore import Qt, QPoint
+from PyQt5.QtWidgets import QApplication ,QMessageBox
+from PyQt5.QtCore import QPoint
 import cv2
 import numpy as np
-import matplotlib.pyplot as plt
 from classes.canny import convolve
 class Snake():
     def __init__(self):
@@ -111,8 +110,6 @@ class Snake():
         self.contour_area = round(self.calculate_contour_area(new_snake))
         self.generate_chain_code(new_snake)
         
-
-
     def calculate_contour_perimiter(self, contour):
         """Calculate the perimiter of the contour."""
         contour_perimeter = 0.0
@@ -121,7 +118,6 @@ class Snake():
             p2 = np.array(contour[(i + 1) % len(contour)])  # Wrap around for closed contour
             contour_perimeter += np.linalg.norm(p1 - p2)
         return contour_perimeter
-    
     
     def calculate_contour_area(self, contour):
         """Calculate the contour_area enclosed by the contour."""
@@ -236,32 +232,4 @@ class Snake():
 
         return [(int(x), int(y)) for x, y in zip(new_x_vals, new_y_vals)]
         
-    # def greedy_snake(self, image, contour, alpha=4, beta=1,gamma = 1, iterations=100):
-    #     """Greedy algorithm to adjust contour points within a 5x5 window."""
-        
-    #     gradient_x = cv2.Sobel(image, cv2.CV_64F, 1, 0, ksize=5)
-    #     gradient_y = cv2.Sobel(image, cv2.CV_64F, 0, 1, ksize=5)
-        
-    #     for _ in range(iterations):
-    #         new_contour = []
-    #         for i, (x, y) in enumerate(contour):
-    #             min_energy = float('inf')
-    #             best_x, best_y = x, y
-                
-    #             for dx in range(-2, 3):
-    #                 for dy in range(-2, 3):
-    #                     new_x, new_y = x + dx, y + dy
-                        
-    #                     if 0 <= new_x < image.shape[1] and 0 <= new_y < image.shape[0]:
-    #                         E_ext = self.external_energy((gradient_x, gradient_y), new_x, new_y)
-    #                         elasticity , curvature  = self.internal_energy(contour, i, new_x, new_y)
-    #                         total_energy =  alpha * elasticity +beta * curvature + gamma * E_ext
-    #                         if total_energy < min_energy:
-    #                             min_energy = total_energy
-    #                             best_x, best_y = new_x, new_y
-                
-    #             new_contour.append((best_x, best_y))
-            
-    #         contour = np.array(new_contour, dtype=np.int32)
-
-    #     return contour
+    

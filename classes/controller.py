@@ -4,7 +4,6 @@ from classes.enums import ContourMode
 from classes.snake import Snake
 from copy import deepcopy
 from classes.canny import convert_rgb_to_gray
-from classes.image import Image
 from classes.canny import apply_canny_edge_detection, detect_shapes, draw_detected_shapes
 
 class Controller():
@@ -45,30 +44,6 @@ class Controller():
         qimage = QImage(image_array.data, width, height, bytes_per_line, QImage.Format_RGB888)
         return QPixmap.fromImage(qimage)
     
-    # def apply_canny_edge_detection(self, sigma, low_threshold, high_threshold):
-    #     from classes.canny import apply_canny_edge_detection
-        
-    #     if self.input_image.input_image is not None:
-    #         edges = apply_canny_edge_detection(self.input_image.input_image, sigma, low_threshold, high_threshold)
-            
-    #         # Convert to RGB if grayscale
-    #         if len(edges.shape) == 2:
-    #             edges_rgb = cv2.cvtColor(edges, cv2.COLOR_GRAY2RGB)
-    #         else:
-    #             edges_rgb = edges
-            
-    #         # Update the output image
-    #         self.output_image.input_image = edges_rgb
-    #         self.output_image.output_image = edges_rgb
-            
-    #         # Update the display
-    #         self.output_image_label.setPixmap(self.numpy_to_qpixmap(edges_rgb))
-    #         self.output_image_label.setScaledContents(True)
-        
-    #     return edges_rgb
-
-
-
     def apply_canny_edge_detection(self, sigma, low_threshold, high_threshold, 
                               detect_lines=False, detect_circles=False, detect_ellipses=False,
                               line_vote_threshold=50, circle_vote_threshold=50, ellipse_vote_threshold=50):
@@ -112,8 +87,6 @@ class Controller():
             self.output_image_label.setScaledContents(True)
                 
         return result_image
-
-
 
     def apply_snake_greedy(self ,alpha , beta , gamma ,window_size):
         initial_contour_points = self.contour_drawing_widget.contour_points

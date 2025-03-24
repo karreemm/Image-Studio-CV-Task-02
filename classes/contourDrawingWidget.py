@@ -1,8 +1,7 @@
 import math
-from PyQt5.QtWidgets import QLabel, QVBoxLayout, QFrame, QPushButton, QHBoxLayout, QWidget
-from PyQt5.QtGui import QPixmap, QImage, QPainter, QPen
+from PyQt5.QtWidgets import QLabel
+from PyQt5.QtGui import QPainter, QPen
 from PyQt5.QtCore import Qt, QPoint
-import cv2
 import numpy as np
 from classes.enums import ContourMode
 
@@ -22,21 +21,6 @@ class ContourDrawingWidget(QLabel):
     def setDrawingEnabled(self, enabled):
         """Enable or disable drawing functionality."""
         self.drawing_enabled = enabled
-
-    # def resizeEvent(self, event):
-    #     """Resizes the drawing area while keeping the image aspect ratio."""
-    #     if self.pixmap:
-    #         scaled_pixmap = self.pixmap.scaled(self.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
-    #         self.setPixmap(scaled_pixmap)
-    #     super().resizeEvent(event)
-    
-    # def set_mode(self, mode):
-    #     """Change contour mode (free, rectangle, circle)."""
-    #     self.current_mode = mode
-    #     self.contour_points = []  # Reset points
-    #     self.start_point = None
-    #     self.end_point = None
-    #     self.update()
 
     def mousePressEvent(self, event):
         """Handles mouse press event to start drawing."""
@@ -81,11 +65,7 @@ class ContourDrawingWidget(QLabel):
     def paintEvent(self, event):
         """Redraws the image and overlays contours using stored contour points."""
         if self.pixmap:
-            # scaled_pixmap = self.pixmap.scaled(self.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
             painter = QPainter(self)
-            # target_rect = self.rect()
-            # image_rect = scaled_pixmap.rect()
-            # image_rect.moveCenter(target_rect.center())
             painter.drawPixmap(self.rect(), self.pixmap)
 
             pen = QPen(Qt.red, 2, Qt.SolidLine)

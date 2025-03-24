@@ -1,15 +1,12 @@
 import sys
-import numpy as np
-from PyQt5.QtWidgets import QApplication, QMainWindow , QPushButton , QStackedWidget ,QFrame , QLabel , QVBoxLayout, QHBoxLayout , QCheckBox , QComboBox , QLineEdit, QSlider
+from PyQt5.QtWidgets import QApplication, QMainWindow , QPushButton , QFrame , QLabel , QVBoxLayout , QCheckBox , QComboBox , QLineEdit, QSlider
 from PyQt5.uic import loadUi
 from PyQt5.QtGui import QIcon
-import cv2
 from helper_functions.compile_qrc import compile_qrc
 from classes.image import Image
 from classes.controller import Controller
 from classes.enums import ContourMode
 from classes.contourDrawingWidget import ContourDrawingWidget
-from classes.snake import Snake
 compile_qrc()
 from icons_setup.icons import *
 
@@ -188,46 +185,6 @@ class MainWindow(QMainWindow):
         
     def update_chain_code(self):
         self.chain_code.setText(str(self.controller.snake.chain_code))
-        
-    # def apply_canny_edge_detection(self):
-        
-    #     # Default values if fields are empty
-    #     sigma = 1.4
-    #     t_low = 40
-    #     t_high = 100
-        
-    #     # Try to convert inputs to appropriate values
-    #     try:
-    #         if self.sigma_input.text():
-    #             sigma = float(self.sigma_input.text())
-    #         if self.t_low_input.text():
-    #             t_low = float(self.t_low_input.text())
-    #         if self.t_high_input.text():
-    #             t_high = float(self.t_high_input.text())
-    #     except ValueError:
-    #         # If conversion fails, use default values
-    #         pass
-        
-    #     # Apply Canny edge detection
-    #     if self.input_image.input_image is not None:
-    #         from classes.canny import apply_canny_edge_detection
-            
-    #         # Apply the Canny edge detection
-    #         edges = apply_canny_edge_detection(self.input_image.input_image, sigma, t_low, t_high)
-            
-    #         # Convert the edges to 3-channel RGB for display
-    #         if len(edges.shape) == 2:  # If single channel
-    #             edges_rgb = cv2.cvtColor(edges, cv2.COLOR_GRAY2RGB)
-    #         else:
-    #             edges_rgb = edges
-            
-    #         # Update the output image
-    #         self.output_image.input_image = edges_rgb
-    #         self.output_image.output_image = edges_rgb
-            
-    #         # Update the output image display
-    #         self.output_contour_drawing.setPixmap(self.controller.numpy_to_qpixmap(edges_rgb))
-    #         self.output_contour_drawing.setScaledContents(True)
 
     def apply_canny_edge_detection(self):
         

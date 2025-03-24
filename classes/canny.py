@@ -1,8 +1,5 @@
 import cv2
-from PyQt5.QtWidgets import QApplication, QFileDialog
 import numpy as np
-import sys
-import random
 
 def apply_canny_edge_detection(img, sigma, low_threshold, high_threshold):
     
@@ -24,15 +21,6 @@ def apply_canny_edge_detection(img, sigma, low_threshold, high_threshold):
     final_edges = apply_hysteresis_thresholding(thresholded_image, edge_ids)
 
     return final_edges
-
-# def select_image():
-#     app = QApplication(sys.argv)
-#     options = QFileDialog.Options()
-#     file_path, _ = QFileDialog.getOpenFileName(None, "Select Image", "", "Image Files (*.jpg *.jpeg *.png *.bmp *.gif)", options=options)
-#     if file_path:
-#         img = cv2.imread(file_path, cv2.IMREAD_UNCHANGED)
-#         return img
-#     return None
 
 def convert_rgb_to_gray(image):
     '''
@@ -596,7 +584,7 @@ def detect_ellipses_hough(image):
     Detect ellipses in an image using Hough transform implementation.
         
     Returns:
-        list: List of detected ellipses in ((center_x, center_y), (major_axis, minor_axis), angle) format
+        list: List of detected ellipses in 
     """
      # Convert to grayscale if necessary
     if len(image.shape) == 3:
