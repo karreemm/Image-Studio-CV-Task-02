@@ -16,9 +16,19 @@ class ContourDrawingWidget(QLabel):
         self.start_point = None  # Start point of shape
         self.end_point = None  # End point of shape
         self.contour_points = []  # Free-draw contour points
-        self.current_mode = ContourMode.RECTANGLE  # Default mode (free draw)
+        self.current_mode = ContourMode.FREE  # Default mode (free draw)
+        self.drawing_enabled = True
+    
+    def setDrawingEnabled(self, enabled):
+        """Enable or disable drawing functionality."""
+        self.drawing_enabled = enabled
 
-
+    def resizeEvent(self, event):
+        """Resizes the drawing area while keeping the image aspect ratio."""
+        if self.pixmap:
+            scaled_pixmap = self.pixmap.scaled(self.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            self.setPixmap(scaled_pixmap)
+        super().resizeEvent(event)
     # def set_mode(self, mode):
     #     """Change contour mode (free, rectangle, circle)."""
     #     self.current_mode = mode
@@ -29,6 +39,8 @@ class ContourDrawingWidget(QLabel):
 
     def mousePressEvent(self, event):
         """Handles mouse press event to start drawing."""
+        if (self.drawing_enabled == False):
+            return
         if event.button() == Qt.LeftButton:
             self.drawing = True
             self.start_point = event.pos()
@@ -41,6 +53,8 @@ class ContourDrawingWidget(QLabel):
 
     def mouseMoveEvent(self, event):
         """Handles mouse movement for dynamic drawing."""
+        if (self.drawing_enabled == False):
+            return
         if self.drawing:
             if self.current_mode == ContourMode.FREE:
                 self.contour_points.append(event.pos())  # Add points dynamically
@@ -57,6 +71,8 @@ class ContourDrawingWidget(QLabel):
             
     def mouseReleaseEvent(self, event):
         """Stops drawing when the mouse is released."""
+        if (self.drawing_enabled == False):
+            return
         if event.button() == Qt.LeftButton:
             self.drawing = False
             self.update()
@@ -64,8 +80,12 @@ class ContourDrawingWidget(QLabel):
     def paintEvent(self, event):
         """Redraws the image and overlays contours using stored contour points."""
         if self.pixmap:
+            scaled_pixmap = self.pixmap.scaled(self.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
             painter = QPainter(self)
-            painter.drawPixmap(self.rect(), self.pixmap)
+            target_rect = self.rect()
+            image_rect = scaled_pixmap.rect()
+            image_rect.moveCenter(target_rect.center())
+            painter.drawPixmap(image_rect, scaled_pixmap)
 
             pen = QPen(Qt.red, 2, Qt.SolidLine)
             painter.setPen(pen)
@@ -76,6 +96,7 @@ class ContourDrawingWidget(QLabel):
                     p1 = self.contour_points[i]
                     p2 = self.contour_points[i + 1]
                     painter.drawLine(p1, p2)
+                # painter.drawLine(self.contour_points[-1], self.contour_points[0])
 
             # Draw Rectangle Using Contour Points
             elif self.current_mode == ContourMode.RECTANGLE and len(self.contour_points) > 1:
@@ -105,7 +126,7 @@ class ContourDrawingWidget(QLabel):
         x1, y1 = self.start_point.x(), self.start_point.y()
         x2, y2 = self.end_point.x(), self.end_point.y()
 
-        num_points_per_edge = 10  # More points for smoother edges
+        num_points_per_edge = 400  # More points for smoother edges
 
         # Function to generate intermediate points between two points
         def interpolate_points(p1, p2, num_points):
@@ -134,7 +155,7 @@ class ContourDrawingWidget(QLabel):
         center_y = (self.start_point.y() + self.end_point.y()) // 2
         radius = abs(self.start_point.x() - self.end_point.x()) // 2  # Approximate radius
 
-        num_points = 100  # Increase for a smoother circle
+        num_points = 700  # Increase for a smoother circle
         self.contour_points = [
             QPoint(int(center_x + radius * math.cos(theta)), 
                 int(center_y + radius * math.sin(theta))) 
