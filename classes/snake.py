@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QLabel, QVBoxLayout, QFrame, QPushButton, QHBoxLayout, QWidget
+from PyQt5.QtWidgets import QLabel, QVBoxLayout, QFrame, QPushButton, QHBoxLayout, QWidget ,QApplication ,QMessageBox
 from PyQt5.QtGui import QPixmap, QImage, QPainter, QPen
 from PyQt5.QtCore import Qt, QPoint
 import cv2
@@ -14,7 +14,7 @@ class Snake():
         
     def convert_qpoints_to_list(self, qpoints):
         
-        self.contour_points = [(point.x(), point.y()) for point in qpoints]        
+        return [(point.x(), point.y()) for point in qpoints]        
 
     def convert_list_to_qpoints(self, points_list):
         """
@@ -35,7 +35,7 @@ class Snake():
         external_energy_magnitude = np.sqrt((gradient_x)**2 +(gradient_y)**2)
         # if external_energy_magnitude.max() > 0:
         #     external_energy_magnitude = external_energy_magnitude / external_energy_magnitude.max()
-        return external_energy_magnitude**2
+        return -external_energy_magnitude**2
     
     def compute_weighted_internal_energy(self, previous_point, new_x, new_y, next_point, alpha, beta):
         """
@@ -50,29 +50,26 @@ class Snake():
         """
         Compute the external energy based on the image gradient.
         """
-        return -gamma * image_energy[new_y, new_x]
+        return gamma * image_energy[new_y, new_x]
 
     
-    def active_contour_greedy(self, image, contour_points, alpha=1, beta=1, gamma=1, max_iterations=250, 
+    def active_contour_greedy(self, image, output_image_label ,alpha=1, beta=1, gamma=1, max_iterations=1000, 
                             search_window_size=5):
         """
         Implement the active contour (snake) algorithm using a greedy approach.
         """
-        snake = np.array(contour_points)
         height, width = image.shape[:2]
         image_energy = self.compute_image_energy(image)
         if search_window_size % 2 == 0:
             search_window_size += 1
         search_window_size = (search_window_size - 1) // 2
         
-        for iteration in range(max_iterations):
-            new_snake = np.copy(snake)
-            snake_energy = np.zeros(len(snake))
-            
-            for i in range(len(snake)):
-                x, y = snake[i]
-                previous_index, next_index = (i - 1) % len(snake), (i + 1) % len(snake)
-                previous_point, next_point = snake[previous_index], snake[next_index]
+        for iteration in range(max_iterations):            
+            new_snake = list(self.contour_points)
+            for i in range(len(self.contour_points)):
+                x, y = self.contour_points[i]
+                previous_index, next_index = (i - 1) % len(self.contour_points), (i + 1) % len(self.contour_points)
+                previous_point, next_point = self.contour_points[previous_index], self.contour_points[next_index]
                 
                 min_energy, optimal_point = float('inf'), (x, y)
                 
@@ -88,21 +85,24 @@ class Snake():
                             if total_energy < min_energy:
                                 min_energy, optimal_point = total_energy, (new_x, new_y)
                 
-                            snake_energy[i] = min_energy
-                new_snake[i] = optimal_point
+                if(optimal_point != (x,y)):
+                    new_snake[i] = optimal_point
             
-            snake = new_snake
+            self.contour_points = new_snake
+            new_contour_points = self.convert_list_to_qpoints(new_snake)
+            output_image_label.contour_points = new_contour_points
+            output_image_label.update()
+            QApplication.processEvents()
             
             # if iteration > 0 and np.mean(snake_energy) < 0.0001:
             #     print(f"Converged after {iteration + 1} iterations")
             #     break
-        
-        self.contour_perimiter = round(self.calculate_contour_perimiter(snake))
-        self.contour_area = round(self.calculate_contour_area(snake))
-        print(f'contour_perimiter : {self.contour_perimiter}')
-        print(f'contour_area : {self.contour_area}')
-        
-        return snake
+        QMessageBox.information(None, "Iterations Ended", "Iterations Ended")
+        # self.contour_perimiter = round(self.calculate_contour_perimiter(new_snake))
+        # self.contour_area = round(self.calculate_contour_area(new_snake))
+        # print(f'contour_perimiter : {self.contour_perimiter}')
+        # print(f'contour_area : {self.contour_area}')
+
 
     def calculate_contour_perimiter(self, contour):
         """Calculate the perimiter of the contour."""
@@ -133,8 +133,8 @@ class Snake():
         # vertical_gradient_matrix = np.array([[2, 1, 0, -1, -2], [2, 1, 0, -1, -2], [4, 2, 0, -2, -4], [2, 1, 0, -1, -2], [2, 1, 0, -1, -2]] , dtype=np.float32)
         # vertical_edges = convolve(image, horizontal_gradient_matrix)
         # horizontal_edges = convolve(image, vertical_gradient_matrix)
-        vertical_edges = cv2.Sobel(image , cv2.CV_64F , 0, 1,ksize=11)
-        horizontal_edges = cv2.Sobel(image , cv2.CV_64F , 1, 0, ksize=11)
+        vertical_edges = cv2.Sobel(image , cv2.CV_64F , 0, 1,ksize=3)
+        horizontal_edges = cv2.Sobel(image , cv2.CV_64F , 1, 0, ksize=3)
 
         return vertical_edges , horizontal_edges
     
