@@ -118,7 +118,7 @@ class ContourDrawingWidget(QLabel):
                     painter.drawLine(p1, p2)
                 # Connect last and first points to complete the shape
                 painter.drawLine(self.contour_points[-1], self.contour_points[0])
-
+                
             painter.end()
 
 
@@ -127,7 +127,7 @@ class ContourDrawingWidget(QLabel):
         x1, y1 = self.start_point.x(), self.start_point.y()
         x2, y2 = self.end_point.x(), self.end_point.y()
 
-        num_points_per_edge = 400  # More points for smoother edges
+        num_points_per_edge = 100  # More points for smoother edges
 
         # Function to generate intermediate points between two points
         def interpolate_points(p1, p2, num_points):
@@ -156,7 +156,7 @@ class ContourDrawingWidget(QLabel):
         center_y = (self.start_point.y() + self.end_point.y()) // 2
         radius = abs(self.start_point.x() - self.end_point.x()) // 2  # Approximate radius
 
-        num_points = 700  # Increase for a smoother circle
+        num_points = 600  # Increase for a smoother circle
         self.contour_points = [
             QPoint(int(center_x + radius * math.cos(theta)), 
                 int(center_y + radius * math.sin(theta))) 

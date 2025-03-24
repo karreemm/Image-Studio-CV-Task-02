@@ -73,7 +73,7 @@ class MainWindow(QMainWindow):
 
         self.cannyMaxVoteEllipses = self.findChild(QLabel, "cannyMaxVoteEllipses")
         self.cannyMaxVoteCircles = self.findChild(QLabel, "cannyMaxVoteCircles")
-        self.cannyMaxVoteLines = self.findChild(QLabel, "cannyMaxVoteLines")
+        self.cannyMaxVoteLines = self.findChild(QLabel, "cannyMaxVoteLines") 
 
         self.cannyMaxVoteEllipsesSlider = self.findChild(QSlider, "cannyMaxVoteEllipsesSlider")
         self.cannyMaxVoteCirclesSlider = self.findChild(QSlider, "cannyMaxVoteCirclesSlider")

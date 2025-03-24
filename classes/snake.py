@@ -2,6 +2,7 @@ from PyQt5.QtWidgets import QLabel, QVBoxLayout, QFrame, QPushButton, QHBoxLayou
 from PyQt5.QtCore import Qt, QPoint
 import cv2
 import numpy as np
+import matplotlib.pyplot as plt
 from classes.canny import convolve
 class Snake():
     def __init__(self):
@@ -11,7 +12,9 @@ class Snake():
         self.chain_code = []
         
     def convert_qpoints_to_list(self, qpoints):
-        
+        '''
+        Convert a list of QPoints to a list of tuples (x,y)
+        '''
         return [(point.x(), point.y()) for point in qpoints]        
 
     def convert_list_to_qpoints(self, points_list):
@@ -27,13 +30,17 @@ class Snake():
         """
         gradient_y , gradient_x = self.calculate_gradient_sobel(image)
         external_energy_magnitude = np.sqrt((gradient_x)**2 +(gradient_y)**2)
+        
         return -external_energy_magnitude**2
     
     def compute_weighted_internal_energy(self, previous_point, new_x, new_y, next_point, alpha, beta):
         """
         Compute the internal energy (continuity and curvature).
         """
+        # First Derivate using Finite Difference
         elasticity_energy = ((new_x - previous_point[0])**2 + (new_y - previous_point[1])**2 + (next_point[0] - new_x)**2 + (next_point[1] - new_y)**2)
+        
+        # Second Derivate using Finite Difference
         curvature_energy = ((previous_point[0] - 2 * new_x + next_point[0])**2 +
                             (previous_point[1] - 2 * new_y + next_point[1])**2)
         return alpha * elasticity_energy + beta * curvature_energy
@@ -51,12 +58,15 @@ class Snake():
         Implement the active contour (snake) algorithm using a greedy approach.
         """
         height, width = image.shape[:2]
+        
         image_energy = self.compute_image_energy(image)
+        # Ensure that the window size is of odd size
         if search_window_size % 2 == 0:
             search_window_size += 1
         search_window_size = (search_window_size - 1) // 2
         
         for iteration in range(max_iterations): 
+            # Flag for early convergence
             moved = False           
             new_snake = list(self.contour_points)
             for i in range(len(self.contour_points)):
@@ -64,13 +74,15 @@ class Snake():
                 previous_index, next_index = (i - 1) % len(self.contour_points), (i + 1) % len(self.contour_points)
                 previous_point, next_point = self.contour_points[previous_index], self.contour_points[next_index]
                 
+                # Assign initial variables for each contour index
                 min_energy, optimal_point = float('inf'), (x, y)
                 
                 for dx in range(-search_window_size, search_window_size + 1):
                     for dy in range(-search_window_size, search_window_size + 1):
                         new_x, new_y = int(x + dx), int(y + dy)
                         
-                        if 0 <= new_x < width and 0 <= new_y < height:
+                        if 0 <= new_x < width and 0 <= new_y < height:  # Ensure the neighbor is inside the image
+                            
                             internal_energy = self.compute_weighted_internal_energy(previous_point, new_x, new_y, next_point, alpha, beta)
                             external_energy = self.compute_weighted_external_energy(image_energy, new_x, new_y, gamma)
                             total_energy = internal_energy + external_energy
@@ -86,7 +98,7 @@ class Snake():
             new_contour_points = self.convert_list_to_qpoints(new_snake)
             output_image_label.contour_points = new_contour_points
             output_image_label.update()
-            self.resample_contour_points()
+            self.contour_points = self.resample_contour_points(new_snake)
             QApplication.processEvents()
             if not moved:
                 break
@@ -200,22 +212,22 @@ class Snake():
         kernel = kernel / np.sum(kernel)
         return convolve(image , kernel)
     
-    def resample_contour_points(self):
+    def resample_contour_points(self , contour_points):
         """
         Resample the given contour points to be evenly spaced.
         """
-        if len(self.contour_points) < 2:
-            return self.contour_points
+        if len(contour_points) < 2:
+            return contour_points
 
-        x_vals = np.array([p[0] for p in self.contour_points])
-        y_vals = np.array([p[1] for p in self.contour_points])
+        x_vals = np.array([p[0] for p in contour_points])
+        y_vals = np.array([p[1] for p in contour_points])
 
         # Compute cumulative distances
         distances = np.sqrt(np.diff(x_vals) ** 2 + np.diff(y_vals) ** 2)
         cumulative_distances = np.insert(np.cumsum(distances), 0, 0)
 
         # Generate evenly spaced distances
-        new_distances = np.linspace(0, cumulative_distances[-1], len(self.contour_points))
+        new_distances = np.linspace(0, cumulative_distances[-1], len(contour_points))
 
         # Interpolate new points
         new_x_vals = np.interp(new_distances, cumulative_distances, x_vals)
