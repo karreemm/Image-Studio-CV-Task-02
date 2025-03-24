@@ -105,7 +105,7 @@ def apply_gaussian_filter(img, filter_size=3, sigma=1):
 def find_magnitude_and_orientation(img, filter_size=3):
     
     '''
-    Default filter size is 5x5
+    Default filter size is 3x3
 
     Returns 2 matrices: magnitude and orientation
     '''
@@ -206,10 +206,12 @@ def apply_hysteresis_thresholding(mag, ids):
     # set strong edges into an intensity of 255
     result[ids == 2] = 255
     
+    # neighborhood directions
+    # when combined, these create offsets for all 8 directions around a pixel
     dx = [-1, -1, -1, 0, 0, 1, 1, 1]
     dy = [-1, 0, 1, -1, 1, -1, 0, 1]
-    
-    # recursively find connected edges
+
+    # edge tracing
     def trace_edge(y, x):
         result[y, x] = 255
         
@@ -219,12 +221,12 @@ def apply_hysteresis_thresholding(mag, ids):
             if 0 <= ny < height and 0 <= nx < width:
                 if ids[ny, nx] == 1 and result[ny, nx] == 0:
                     trace_edge(ny, nx)
-    
+
     # finding all strong edges and tracing connected weak edges
     for i_y in range(height):
         for i_x in range(width):
             if ids[i_y, i_x] == 2 and result[i_y, i_x] == 255:
-                trace_edge(i_y, i_x)
+                trace_edge(i_y, i_x)  
     
     return result
 
