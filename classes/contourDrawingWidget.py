@@ -59,7 +59,6 @@ class ContourDrawingWidget(QLabel):
         if self.drawing:
             if self.current_mode == ContourMode.FREE:
                 self.contour_points.append(event.pos())  # Add points dynamically
-            
             else:
                 self.end_point = event.pos()  # Update shape end point
                 
@@ -70,7 +69,7 @@ class ContourDrawingWidget(QLabel):
                     self.update_circle_contour()
             
             self.update()
-
+            
     def mouseReleaseEvent(self, event):
         """Stops drawing when the mouse is released."""
         if (self.drawing_enabled == False):
