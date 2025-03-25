@@ -91,10 +91,10 @@ class Controller():
     def apply_snake_greedy(self ,alpha , beta , gamma ,window_size):
         initial_contour_points = self.contour_drawing_widget.contour_points
         self.snake.contour_points = self.snake.convert_qpoints_to_list(initial_contour_points)
-        thresholded_image = apply_canny_edge_detection(self.input_image.input_image , 2 ,30,200)
+        # thresholded_image = apply_canny_edge_detection(self.input_image.input_image , 2 ,30,200)
         greyed_image = convert_rgb_to_gray(self.input_image.input_image)
         # _ , thresholded = cv2.threshold(greyed_image , 127,255,cv2.THRESH_BINARY)
-        self.snake.active_contour_greedy( thresholded_image ,self.output_image_label, alpha= alpha , beta=beta , gamma= gamma , search_window_size= window_size)
+        self.snake.active_contour_greedy( greyed_image ,self.output_image_label, alpha= alpha , beta=beta , gamma= gamma , search_window_size= window_size)
         # new_contour_qpoints = self.snake.convert_list_to_qpoints(new_contour_list)
         # self.output_image_label.contour_points = new_contour_qpoints
         # self.output_image_label.update()

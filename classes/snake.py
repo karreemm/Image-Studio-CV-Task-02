@@ -9,7 +9,7 @@ class Snake():
         self.contour_perimiter = 0
         self.contour_area = 0
         self.chain_code = []
-        
+        self.d_bar = 0
     def convert_qpoints_to_list(self, qpoints):
         '''
         Convert a list of QPoints to a list of tuples (x,y)
@@ -37,7 +37,7 @@ class Snake():
         Compute the internal energy (continuity and curvature).
         """
         # First Derivate using Finite Difference
-        elasticity_energy = ((new_x - previous_point[0])**2 + (new_y - previous_point[1])**2 + (next_point[0] - new_x)**2 + (next_point[1] - new_y)**2)
+        elasticity_energy =  ((next_point[0] - new_x)**2 + (next_point[1] - new_y)**2 - self.d_bar)**2
         
         # Second Derivate using Finite Difference
         curvature_energy = ((previous_point[0] - 2 * new_x + next_point[0])**2 +
@@ -203,12 +203,6 @@ class Snake():
 
         return vertical_edges , horizontal_edges
     
-    def apply_gaussian_blur(self , image , filter_size , sigma = 1):
-        x, y = np.meshgrid(np.arange(-filter_size // 2,(filter_size // 2 )+1), np.arange(-filter_size // 2,(filter_size // 2 )+1))  
-        kernel = np.exp(-(x**2 + y**2)/(2*sigma**2))/(2*np.pi*sigma**2) 
-        kernel = kernel / np.sum(kernel)
-        return convolve(image , kernel)
-    
     def resample_contour_points(self , contour_points):
         """
         Resample the given contour points to be evenly spaced.
@@ -222,7 +216,7 @@ class Snake():
         # Compute cumulative distances
         distances = np.sqrt(np.diff(x_vals) ** 2 + np.diff(y_vals) ** 2)
         cumulative_distances = np.insert(np.cumsum(distances), 0, 0)
-
+        self.d_bar = cumulative_distances[-1] / len(contour_points)
         # Generate evenly spaced distances
         new_distances = np.linspace(0, cumulative_distances[-1], len(contour_points))
 
