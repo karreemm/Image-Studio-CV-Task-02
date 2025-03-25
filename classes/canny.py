@@ -655,7 +655,7 @@ def detect_ellipses_hough(image):
             max_distance = max(max_distance, distance)
         
         # Adjust axes if needed
-        scale_factor = 1.2 * max_distance / (major_axis / 2)
+        scale_factor = 1.01 * max_distance / (major_axis / 2)
         major_axis *= scale_factor
         minor_axis *= scale_factor
         
