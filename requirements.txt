@@ -1,0 +1,9 @@
+# VisionLab Dependencies
+# Core GUI Framework
+PyQt5>=5.15.0
+
+# Computer Vision and Image Processing
+opencv-python>=4.5.0
+
+# Numerical Computing
+numpy>=1.19.0
